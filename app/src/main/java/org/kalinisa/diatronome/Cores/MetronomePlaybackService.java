@@ -1,115 +1,59 @@
 package org.kalinisa.diatronome.Cores;
 
-import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.app.Service;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.ServiceInfo;
-import android.os.Build;
-import android.os.IBinder;
-
-import androidx.annotation.RequiresApi;
+import android.app.*;
+import android.content.*;
+import android.media.*;
+import android.os.*;
 import androidx.core.app.NotificationCompat;
-import androidx.core.content.ContextCompat;
-
+import org.kalinisa.diatronome.MainActivity;
 import org.kalinisa.diatronome.R;
 
-public class MetronomePlaybackService extends Service
-{
-  // Cannot be 0
-  private final int SERVICE_ID = 1686;
-  @Override
-  public void onCreate()
-  {
-    super.onCreate();
-    startForeground();
-  }
-
-  @Override
-  public IBinder onBind(Intent intent)
-  {
-    // We don't provide binding, so return null
-    return null;
-  }
-
-  @Override
-  public int onStartCommand(Intent intent, int flags, int startId)
-  {
-    super.onStartCommand(intent, flags, startId);
-    MetronomeCore.getInstance().play();
-    return START_STICKY;
-    // return START_NOT_STICKY;
-  }
-
-  @Override
-  public void onDestroy()
-  {
-    MetronomeCore.getInstance().stop();
-  }
-
-  public void startForeground()
-  {
-    int permission = PackageManager.PERMISSION_DENIED;
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
-    {
-      permission = ContextCompat.checkSelfPermission(this, android.Manifest.permission.FOREGROUND_SERVICE);
+/** Owns background playback and audio focus. Process recreation never resumes sound. */
+public class MetronomePlaybackService extends Service {
+    public static final String PLAY="tunebeat.PLAY", STOP="tunebeat.STOP";
+    private static final String CHANNEL="tunebeat_metronome";
+    private AudioManager audio;
+    private AudioFocusRequest focus;
+    private boolean receiverRegistered;
+    private final AudioManager.OnAudioFocusChangeListener focusChange=change->{if(change<0){MetronomeCore.getInstance().stop();stopSelf();}};
+    private final BroadcastReceiver noisy=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent i){MetronomeCore.getInstance().stop();stopSelf();}};
+    public static void configure(Context c,MetronomeCore core){
+        if(core.getTempoBpm()>0)return;
+        core.setRefPitch(440);core.setWaveFormAccent("SINE");core.setWaveFormMain("SINE");core.setWaveFormSubdivision("SINE");
+        core.setPitchAccentSkb(5);core.setPitchMainSkb(3);core.setPitchSubdivisionSkb(3);
+        core.setBeatsConfig(new int[]{4,3,3,3});
+        int bpm=60;try{bpm=c.getSharedPreferences("tunebeat",MODE_PRIVATE).getInt("bpm",60);}catch(ClassCastException ignored){}
+        if(bpm<30||bpm>240)bpm=60;core.setTempoBpm(bpm);
     }
-    if (permission == PackageManager.PERMISSION_DENIED)
-    {
-      // Start as non service
-      MetronomeCore.getInstance().play();
-      return;
+    @Override public void onCreate(){super.onCreate();audio=(AudioManager)getSystemService(AUDIO_SERVICE);}
+    @Override public IBinder onBind(Intent i){return null;}
+    @Override public int onStartCommand(Intent intent,int flags,int startId){
+        if(intent==null||!PLAY.equals(intent.getAction())){MetronomeCore.getInstance().stop();stopSelf();return START_NOT_STICKY;}
+        MetronomeCore core=MetronomeCore.getInstance();configure(this,core);
+        NotificationManager manager=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+        if(Build.VERSION.SDK_INT>=26)manager.createNotificationChannel(new NotificationChannel(CHANNEL,"节拍器播放",NotificationManager.IMPORTANCE_LOW));
+        int immutable=Build.VERSION.SDK_INT>=23?PendingIntent.FLAG_IMMUTABLE:0;
+        PendingIntent open=PendingIntent.getActivity(this,0,new Intent(this,MainActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|immutable);
+        PendingIntent stop=PendingIntent.getService(this,1,new Intent(this,MetronomePlaybackService.class).setAction(STOP),PendingIntent.FLAG_UPDATE_CURRENT|immutable);
+        Notification n=new NotificationCompat.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_launcher).setContentTitle("节拍器正在播放")
+            .setContentText("4/4 · 每拍一下").setContentIntent(open).setOngoing(true).setSilent(true).addAction(0,"停止",stop).build();
+        startForeground(1686,n);
+        if(core.getIsPlaying())return START_NOT_STICKY;
+        int granted;
+        if(Build.VERSION.SDK_INT>=26){
+            focus=new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build()).setOnAudioFocusChangeListener(focusChange).build();
+            granted=audio.requestAudioFocus(focus);
+        }else granted=audio.requestAudioFocus(focusChange,AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN);
+        if(granted!=AudioManager.AUDIOFOCUS_REQUEST_GRANTED){stopSelf();return START_NOT_STICKY;}
+        if(!receiverRegistered){
+            androidx.core.content.ContextCompat.registerReceiver(this,noisy,new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY),androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);receiverRegistered=true;
+        }
+        core.play();return START_NOT_STICKY;
     }
-
-    Intent notificationIntent = new Intent(this, org.kalinisa.diatronome.MainActivity.class);
-    Notification notification = null;
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
-    {
-      PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
-
-      notification = new NotificationCompat.Builder(this, this.getChannelId())
-        .setOngoing(true)
-        .setSmallIcon(R.drawable.ic_launcher)
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-        .setCategory(Notification.CATEGORY_SERVICE)
-        .setContentTitle(getString(R.string.metronome_notificationtitle))
-        .setContentText("" + MetronomeCore.getInstance().getTempoBpm() + " BPM / " + MetronomeCore.getInstance().getSubDivision() + ":" + MetronomeCore.getInstance().getDivision())
-        .setContentIntent(pendingIntent)
-        // Create the notification to display while the service is running
-        .build();
+    @Override public void onDestroy(){
+        MetronomeCore.getInstance().stop();
+        if(receiverRegistered)unregisterReceiver(noisy);
+        if(audio!=null){if(Build.VERSION.SDK_INT>=26&&focus!=null)audio.abandonAudioFocusRequest(focus);else audio.abandonAudioFocus(focusChange);}
+        super.onDestroy();
     }
-    try
-    {
-     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-     {
-       startForeground(SERVICE_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
-     }
-     else
-     {
-       startForeground(SERVICE_ID, notification);
-     }
-    }
-    catch (Exception e)
-    {
-      android.util.Log.w (getClass().getName(), "Can not start metronome service: " + e.getMessage());
-      MetronomeCore.getInstance().play();
-    }
-  }
-
-  @RequiresApi(Build.VERSION_CODES.O)
-  private String getChannelId()
-  {
-    String channelId = "MetronomePlayBackService";
-    String channelName = "Metronome PlayBack";
-    NotificationChannel channel = new NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW);
-    // omitted the LED color
-    channel.setImportance(NotificationManager.IMPORTANCE_NONE);
-    channel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
-    ((NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE)).createNotificationChannel(channel);
-    return channelId;
-  }
 }

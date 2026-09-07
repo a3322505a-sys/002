@@ -1,4 +1,4 @@
-name: Android P0
+name: Android tools
 on:
   push:
     branches: [main]
@@ -31,15 +31,16 @@ jobs:
       - name: Prepare APK and verification data
         run: |
           mkdir -p dist
-          cp app/build/outputs/apk/release/app-release-unsigned.apk dist/TuneBeat-0.0.1-p0-unsigned.apk
+          APP_VERSION=$(sed -n 's/.*versionName "\([^"]*\)".*/\1/p' app/build.gradle)
+          cp app/build/outputs/apk/release/app-release-unsigned.apk "dist/TuneBeat-${APP_VERSION}-unsigned.apk"
           cp "$ANDROID_HOME/build-tools/36.1.0/lib/apksigner.jar" dist/apksigner.jar
-          "$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging dist/TuneBeat-0.0.1-p0-unsigned.apk > dist/package.txt
+          "$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging dist/*-unsigned.apk > dist/package.txt
           git rev-parse HEAD > dist/source-sha.txt
           cd dist
-          sha256sum TuneBeat-0.0.1-p0-unsigned.apk > SHA256SUMS
+          sha256sum *-unsigned.apk > SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
-          name: TuneBeat-P0-build
+          name: TuneBeat-build
           path: dist/
           if-no-files-found: error
       - name: Fetch pinned original for side-by-side install
@@ -61,7 +62,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: P0-verification
+          name: Tool-verification
           path: |
             app/build/reports/tests/
             app/build/outputs/androidTest-results/
