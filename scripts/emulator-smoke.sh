@@ -7,6 +7,7 @@ adb install -g app/build/outputs/apk/debug/app-debug.apk
 adb shell pm path org.kalinisa.diatronome
 adb shell pm path io.github.a3322505a.tunebeat
 gradle --no-daemon :app:connectedDebugAndroidTest
+adb pull /sdcard/Download/tunebeat-tuner.png verification/tuner.png
 # Exercise release code with a temporary CI certificate. The delivered APK is
 # signed offline with the persistent private key, which is never sent to CI.
 gradle --no-daemon --console=plain :app:signingReport > verification/signing-report.txt
@@ -20,7 +21,13 @@ adb shell am start -W -n io.github.a3322505a.tunebeat/org.kalinisa.diatronome.Ma
 sleep 2
 adb shell pidof io.github.a3322505a.tunebeat
 adb shell screencap -p /sdcard/p0.png
-adb pull /sdcard/p0.png verification/p0.png
+adb pull /sdcard/p0.png verification/metronome.png
+python3 scripts/check-permission.py | tee verification/permission.txt
+# One bounded emulator cold-start sample set. Real-device performance is separate.
+for sample in 1 2 3 4 5; do
+  adb shell am force-stop io.github.a3322505a.tunebeat
+  adb shell am start -W -n io.github.a3322505a.tunebeat/org.kalinisa.diatronome.MainActivity >> verification/cold-start.txt
+done
 adb shell am force-stop io.github.a3322505a.tunebeat
 adb shell am start -W -n org.kalinisa.diatronome/.MainActivity | tee verification/original-launch.txt
 sleep 2
