@@ -9,7 +9,10 @@ adb shell pm path io.github.a3322505a.tunebeat
 gradle --no-daemon :app:connectedDebugAndroidTest
 # Exercise release code with a temporary CI certificate. The delivered APK is
 # signed offline with the persistent private key, which is never sent to CI.
-"$ANDROID_HOME/build-tools/36.1.0/apksigner" sign --ks "$HOME/.android/debug.keystore" --ks-pass pass:android --key-pass pass:android --out verification/smoke-release.apk dist/TuneBeat-0.0.1-p0-unsigned.apk
+gradle --no-daemon --console=plain :app:signingReport > verification/signing-report.txt
+smoke_keystore=$(awk '/^Store: / && $2 != "null" {sub(/^Store: /, ""); print; exit}' verification/signing-report.txt)
+test -f "$smoke_keystore"
+"$ANDROID_HOME/build-tools/36.1.0/apksigner" sign --ks "$smoke_keystore" --ks-pass pass:android --key-pass pass:android --out verification/smoke-release.apk dist/TuneBeat-0.0.1-p0-unsigned.apk
 adb install -r verification/smoke-release.apk
 adb shell pm revoke io.github.a3322505a.tunebeat android.permission.RECORD_AUDIO
 adb shell am force-stop io.github.a3322505a.tunebeat
