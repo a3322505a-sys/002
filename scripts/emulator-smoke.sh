@@ -7,7 +7,6 @@ adb install -g app/build/outputs/apk/debug/app-debug.apk
 adb shell pm path org.kalinisa.diatronome
 adb shell pm path io.github.a3322505a.tunebeat
 gradle --no-daemon :app:connectedDebugAndroidTest
-adb pull /sdcard/Android/data/io.github.a3322505a.tunebeat/files/screens verification/screens
 # Exercise release code with a temporary CI certificate. The delivered APK is
 # signed offline with the persistent private key, which is never sent to CI.
 gradle --no-daemon --console=plain :app:signingReport > verification/signing-report.txt
