@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="about_content"><![CDATA[
+    <b><i>Diatronome</i></b> bietet Ihnen ein <i>Stimmgerät</i>, ein <i>visuelles Metronom</i> und einen <i>Synthesizer</i>.
+    Diese Anwendung ist Open Source, datenschutzfreundlich und werbefrei.<br/>
+    <b>Lizenz: </b>%1$s<br/>
+    <b>Quellcode: </b><a href="%2$s">%2$s</a><br/>
+    <b>Unterstützung: </b><a href="%3$s">%3$s</a><br/>
+  ]]></string>
+  <string name="common_yes">Ja</string>
+  <string name="common_no">Nein</string>
+  <string name="action_settings">Einstellungen</string>
+  <string name="action_tuner">Stimmgerät</string>
+  <string name="action_playnote">Synthesizer</string>
+  <string name="action_metronome">Metronom</string>
+  <string name="action_about">Information</string>
+  <string name="metronome_bpm">BPM</string>
+  <string name="metronome_timesignature">Taktangabe</string>
+  <string name="metronome_division">Zeit</string>
+  <string name="metronome_subdivision">Unterteilung</string>
+  <string name="metronome_notificationtitle">Metronom-Wiedergabe</string>
+
+  <!-- Preferences -->
+  <string name="preference_system_title">System</string>
+  <string name="preference_system_theme">Thema</string>
+  <string name="preference_system_screenon">Bildschirm eingeschaltet lassen</string>
+  <string name="preference_system_color">Anwendungsfarbe</string>
+  <string name="preference_system_homescreen">Startbildschirm</string>
+
+  <string name="preference_tuner_title">Stimmgerät</string>
+  <string name="preference_tuner_pitch">Tonhöhenkalibrierung für A4</string>
+  <string name="preference_tuner_notename">Notensystem</string>
+  <string name="preference_tuner_usesharpflat">♯ statt ♭</string>
+  <string name="preference_tuner_transposition">Umsetzung</string>
+  <string name="preference_tuner_temperament">Temperament</string>
+
+  <string name="preference_synthesizer_title">Synthesizer</string>
+  <string name="preference_synthesizer_waveform">Kalvierklang</string>
+  <string name="preference_synthesizer_touchmode">Klavierberührung</string>
+
+  <string name="preference_metronome_title">Metronom</string>
+  <string name="preference_metronome_waveformaccent">Metronom Klang - akzent</string>
+  <string name="preference_metronome_pitchaccent">Metronom-Tonhöhenakzent</string>
+  <string name="preference_metronome_waveformmain">Metronom Klang - Haupt</string>
+  <string name="preference_metronome_pitchmain">Metronom Tonhöhe Haupt</string>
+  <string name="preference_metronome_waveformsubdivision">Metronom Klang - unterteilung</string>
+  <string name="preference_metronome_pitchsubdivision">Metronom-Tonhöhenunterteilung</string>
+  <string name="preference_metronome_bidirectionalneedle">Bidirektionale Nadel</string>
+
+  <string name="preference_advanced_title">Erweiterte Einstellungen</string>
+  <string name="preference_advanced_sensitivity">Mikrofon Empfindlichkeit</string>
+  <string name="preference_advanced_algorithm">Algorithmus</string>
+  <string name="preference_advanced_fps">Bilder pro Sekunde</string>
+
+  <string-array name="array_notes_name">
+    <item>International (A B C)</item>
+    <item>Musiklehre (Do-Re-Mi)</item>
+  </string-array>
+
+  <string-array name="array_notes_name_solfege">
+    <item>Do</item>
+    <item>Re</item>
+    <item>Mi</item>
+    <item>Fa</item>
+    <item>Sol</item>
+    <item>La</item>
+    <item>Si</item>
+  </string-array>
+
+  <string-array name="array_notes_name_letters">
+    <item>C</item>
+    <item>D</item>
+    <item>E</item>
+    <item>F</item>
+    <item>G</item>
+    <item>A</item>
+    <item>B</item>
+  </string-array>
+
+  <string-array name="array_theme">
+    <item>Systemdefiniert</item>
+    <item>Licht</item>
+    <item>Dunkel</item>
+  </string-array>
+
+  <string-array name="array_homescreen">
+    <item>Stimmgerät</item>
+    <item>Metronom</item>
+    <item>Klavier</item>
+  </string-array>
+
+  <string-array name="array_transposition">
+    <item>C</item>
+    <item>C&#x266F;</item>
+    <item>D</item>
+    <item>E&#x266D;</item>
+    <item>E</item>
+    <item>F</item>
+    <item>F&#x266F;</item>
+    <item>G</item>
+    <item>A&#x266D;</item>
+    <item>A</item>
+    <item>B&#x266D;</item>
+    <item>B</item>
+  </string-array>
+
+  <string-array name="array_temperament">
+    <item>Gleichstufige Stimmung - 12 EDO</item>
+    <item>Pythagoräisch - ~53 EDO</item>
+    <item>Zarlino/Helmholtz - ~41 EDO</item>
+    <item>Mitteltönig 1/4 comma - 31 EDO</item>
+    <item>Mitteltönig 1/5 comma - 43 EDO</item>
+    <item>Mitteltönig 1/3 comma - 19 EDO</item>
+    <item>Chromatisch - 108 EDO</item>
+    <item>15 EDO, 15 TET</item>
+    <item>17 EDO, 17 TET</item>
+  </string-array>
+
+  <string-array name="array_waveform">
+    <item>Sinus</item>
+    <item>Dreieck</item>
+    <item>Sägezahn</item>
+    <item>Quadrat</item>
+    <item>Klavier</item>
+    <item>Orgel</item>
+    <item>Trommel</item>
+    <item>Tom</item>
+    <item>Blechtrommel</item>
+    <item>Cymbable</item>
+    <item>Steeldrum</item>
+    <item>Glocke</item>
+    <item>Gitarre</item>
+    <item>Laser</item>
+  </string-array>
+
+  <string-array name="array_pianotouch">
+    <item>Persistente</item>
+    <item>Normal</item>
+  </string-array>
+
+  <string-array name="array_fps">
+    <item>0 BpS</item>
+    <item>15 BpS</item>
+    <item>24 BpS</item>
+    <item>30 BpS</item>
+    <item>45 BpS</item>
+    <item>60 BpS</item>
+  </string-array>
+
+</resources>

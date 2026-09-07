@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+  <string name="common_yes">Ano</string>
+  <string name="common_no">Ne</string>
+  <string name="action_settings">Nastavení</string>
+  <string name="action_tuner">Ladička</string>
+  <string name="action_playnote">Syntetizér</string>
+  <string name="action_metronome">Metronom</string>
+  <string name="action_about">O aplikaci</string>
+
+  <string name="metronome_bpm">Tempo (BPM)</string>
+  <string name="metronome_timesignature">Takt</string>
+  <string name="metronome_division">Dělení taktu</string>
+  <string name="metronome_subdivision">Dělení doby</string>
+  <string name="metronome_notificationtitle">Přehrávání metronomu</string>
+
+  <!-- Preferences -->
+  <string name="preference_system_title">Systém</string>
+  <string name="preference_system_theme">Téma</string>
+  <string name="preference_system_screenon">Ponechat obrazovku zapnutou</string>
+  <string name="preference_system_color">Akcent aplikace</string>
+  <string name="preference_system_homescreen">Domovská obrazovka</string>
+
+  <string name="preference_tuner_title">Nastavení aplikace</string>
+  <string name="preference_tuner_pitch">Kalibrace výšky tónu pro A4</string>
+  <string name="preference_tuner_notename">Názvy not</string>
+  <string name="preference_tuner_usesharpflat">♯ místo ♭</string>
+  <string name="preference_tuner_transposition">Změna tóniny</string>
+  <string name="preference_tuner_temperament">Ladění stupnice</string>
+
+  <string name="preference_synthesizer_title">Nastavení aplikace</string>
+  <string name="preference_synthesizer_waveform">Tvar vlny klavíru</string>
+  <string name="preference_synthesizer_touchmode">Citlivost kláves</string>
+
+  <string name="preference_metronome_title">Nastavení aplikace</string>
+  <string name="preference_metronome_waveformaccent">Tvar vlny metronumu - akcentovaný</string>
+  <string name="preference_metronome_pitchaccent">Akcentovaný tón metronomu</string>
+  <string name="preference_metronome_waveformmain">Tvar vlny  metronumu - akcentovaný</string>
+  <string name="preference_metronome_pitchmain">Hlavní tón metronumu</string>
+  <string name="preference_metronome_waveformsubdivision">Tvar vlny  metronumu - hlavní</string>
+  <string name="preference_metronome_pitchsubdivision">Podřízený tón metronomun</string>
+  <string name="preference_metronome_bidirectionalneedle">Obousměrná ručička metronomu</string>
+
+  <string name="preference_advanced_title">Rozšířené</string>
+  <string name="preference_advanced_sensitivity">Citlivost mikrofonu</string>
+  <string name="preference_advanced_algorithm">Algoritmus</string>
+  <string name="preference_advanced_fps">Snímků za sekundu</string>
+
+  <!-- about -->
+  <string name="about_content"><![CDATA[
+    <b><i>Diatronome</i></b> nabízí <i>tuner</i>, <i>metronome</i> a <i>syntetizér</i>.
+    Tato aplikace je open source, respektuje soukromí a je bez reklam.<br/>
+    <b>Licence: </b>%1$s<br/>
+    <b>Zdrojový kód: </b><a href="%2$s">%2$s</a><br/>
+    <b>Podpora: </b><a href="%3$s">%3$s</a><br/>
+  ]]></string>
+
+  <!-- string array -->
+  <string-array name="array_notes_name">
+    <item>Mezinárodní (A B C)</item>
+    <item>Solmizační slabiky (Do-Re-Mi)</item>
+  </string-array>
+
+  <string-array name="array_theme">
+    <item>Systém</item>
+    <item>Světlé</item>
+    <item>Tmavé</item>
+  </string-array>
+
+  <string-array name="array_homescreen">
+    <item>Ladička</item>
+    <item>Metronom</item>
+    <item>Syntetizér</item>
+  </string-array>
+
+  <string-array name="array_waveform">
+    <item>Sinus</item>
+    <item>Trojúhelník</item>
+    <item>Pila</item>
+    <item>Čtverec</item>
+    <item>Piano</item>
+    <item>Varhany</item>
+    <item>Buben</item>
+    <item>Tom-tom</item>
+    <item>Virbl</item>
+    <item>Činel</item>
+    <item>Steelpan</item>
+    <item>Zvonec</item>
+    <item>Kytara</item>
+    <item>Laser</item>
+  </string-array>
+
+  <string-array name="array_pianotouch">
+    <item>Trvalá</item>
+    <item>Dočasná</item>
+  </string-array>
+
+  <string-array name="array_fps">
+    <item>0 sn/s</item>
+    <item>15 sn/s</item>
+    <item>24 sn/s</item>
+    <item>30 sn/s</item>
+    <item>45 sn/s</item>
+    <item>60 sn/s</item>
+  </string-array>
+
+</resources>

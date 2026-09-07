@@ -1,0 +1,259 @@
+package org.kalinisa.diatronome.Cores;
+
+import android.media.AudioAttributes;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioRecord;
+import android.media.AudioTrack;
+import android.os.Build;
+
+public class AudioUtils
+{
+  public static boolean m_isNdkWorking = false;
+  public static boolean m_isInitialized = false;
+
+  // final int AUDIO_SAMPLE_RATE_HZ = 44100,22050,16000,8000;
+  public static final int AUDIO_SAMPLE_RATE_HZ = AudioTrack_getNativeOutputSampleRate(AudioManager.STREAM_MUSIC);
+  public static final int AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
+  public static final int AUDIO_FORMAT = AudioTrack_getAudioFormat(AUDIO_SAMPLE_RATE_HZ, AUDIO_ENCODING);
+
+  public static synchronized boolean IsAudioWorking()
+  {
+    if (m_isInitialized) return m_isNdkWorking;
+    try
+    {
+      // P0: the upstream probe thread was never started, so every cold start
+      // slept for one second and then reported success without probing audio.
+      m_isNdkWorking = AudioTrack.getMinBufferSize(44100,
+        AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT) > 0;
+    }
+    catch (Exception e)
+    {
+      m_isNdkWorking = false;
+    }
+    finally
+    {
+      m_isInitialized = true;
+    }
+
+    return m_isNdkWorking;
+  }
+
+  public static int AudioTrack_getNativeOutputSampleRate(int streamType)
+  {
+    if (IsAudioWorking())
+    {
+      return AudioTrack.getNativeOutputSampleRate(streamType);
+    }
+    else
+    {
+      return 44100;
+    }
+  }
+
+  public static int AudioTrack_getMinBufferSize(int sampleRateInHz, int channelConfig, int audioFormat)
+  {
+    if (IsAudioWorking())
+    {
+      return AudioTrack.getMinBufferSize(sampleRateInHz, channelConfig, audioFormat);
+    }
+    else
+    {
+      return 1024;
+    }
+  }
+
+  private static int AudioTrack_getAudioFormat(int sampleRateInHz, int channelConfig)
+  {
+    if (AudioTrack.getMinBufferSize(sampleRateInHz, channelConfig, AudioFormat.CHANNEL_OUT_STEREO) > 0)
+    {
+      return AudioFormat.CHANNEL_OUT_STEREO;
+    }
+    else
+    {
+      // Old android device
+      return AudioFormat.CHANNEL_OUT_MONO;
+    }
+  }
+
+  public static int AudioRecord_getMinBufferSize(int sampleRateInHz, int channelConfig, int audioFormat)
+  {
+    if (IsAudioWorking())
+    {
+      return AudioRecord.getMinBufferSize(sampleRateInHz, channelConfig, audioFormat);
+    }
+    else
+    {
+      return 1024;
+    }
+  }
+
+  @SuppressWarnings("ConstantConditions")
+  static public int getAudioFrameSize()
+  {
+    int frameSize = 1;
+    if (AUDIO_FORMAT == AudioFormat.CHANNEL_OUT_DEFAULT ||
+      AUDIO_FORMAT == AudioFormat.CHANNEL_OUT_MONO)
+    {
+      frameSize = 1;
+    }
+    else if (AUDIO_FORMAT == AudioFormat.CHANNEL_OUT_STEREO)
+    {
+      frameSize = 2;
+    }
+    if (AUDIO_ENCODING == AudioFormat.ENCODING_PCM_8BIT)
+    {
+      frameSize *= 1;
+    }
+    else
+    {
+      frameSize *= 2;
+    }
+    return frameSize;
+  }
+
+  // Size of the audio buffer
+  public static int getAudioByteLen (double durationMs)
+  {
+    final int frameSize = getAudioFrameSize();
+    int length = (int)((frameSize * AUDIO_SAMPLE_RATE_HZ * durationMs) / 1000);
+    // Ensure what the audio buffer is multiple of frame size
+    length = ((length + frameSize - 1) / frameSize) * frameSize;
+    return length;
+  }
+
+  // Duration of the audio buffer
+  public static double getDurationMs(int length)
+  {
+    return (1000.0 * length) / (AUDIO_SAMPLE_RATE_HZ * getAudioFrameSize());
+  }
+
+  // Size of the user buffer
+  public static int getAudioSampleLen (double durationMs)
+  {
+    return (int)(AUDIO_SAMPLE_RATE_HZ * durationMs) / 1000;
+  }
+
+  public static int getAudioBufferSize(int audioLen)
+  {
+    int frameSize = getAudioFrameSize();
+
+    // Buffer size should be greater than MinSize, and multiple of (ChannelCount * frameSizeInByte)
+    // Where frameSizeInByte = 1 if 8 BITS, 2 is 16 BITS, ChannelCount = 1 if mono, 2 is stereo
+    return Math.max(
+      frameSize * ((audioLen + (frameSize - 1)) / frameSize),
+      AudioTrack_getMinBufferSize(AUDIO_SAMPLE_RATE_HZ, AUDIO_FORMAT, AUDIO_ENCODING));
+  }
+
+  @SuppressWarnings("deprecation")
+  public static AudioTrack newAudioTrack(int audioLen, int AUDIO_MODE)
+  {
+    final int AUDIO_BUFFER_SIZE = getAudioBufferSize(audioLen);
+
+    AudioTrack audioTrack = null;
+    if (!IsAudioWorking())
+    {
+      audioTrack = null;
+    }
+    else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+    {
+      audioTrack = new AudioTrack(
+        (new AudioAttributes.Builder())
+          .setUsage(AudioAttributes.USAGE_MEDIA)
+          .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+          .build(),
+        (new AudioFormat.Builder())
+          .setEncoding(AUDIO_ENCODING)
+          .setSampleRate(AUDIO_SAMPLE_RATE_HZ)
+          .setChannelMask(AUDIO_FORMAT)
+          .build(),
+        AUDIO_BUFFER_SIZE,
+        AUDIO_MODE,
+        AudioManager.AUDIO_SESSION_ID_GENERATE);
+    }
+    else
+    {
+      audioTrack = new AudioTrack(
+        AudioManager.STREAM_MUSIC,
+        AUDIO_SAMPLE_RATE_HZ,
+        AUDIO_FORMAT,
+        AUDIO_ENCODING,
+        AUDIO_BUFFER_SIZE,
+        AUDIO_MODE);
+    }
+    return audioTrack;
+  }
+
+  public static byte[] toAudioBytes(final short[] pcm)
+  {
+    //noinspection ConstantConditions
+    byte[] audioByte = new byte[pcm.length *
+      (AUDIO_ENCODING == AudioFormat.ENCODING_PCM_8BIT ? 1 : 2) *
+      (AUDIO_FORMAT == AudioFormat.CHANNEL_OUT_STEREO ? 2 : 1)];
+    int index_byte = 0;
+
+    // Caution : Do not do  audioByte[index_byte++] = audioByte[index_byte - 2] because the left operand (index_byte++) will be executed before right operand (index_byte - 2)
+    for (int i = 0; i < pcm.length; i++)
+    {
+      // in 16 bit wav PCM, first byte is the low order byte
+      audioByte[index_byte] = (byte)((pcm[i] >> 0) & 0xFF);
+      index_byte++;
+      //noinspection ConstantConditions
+      if (AUDIO_ENCODING == AudioFormat.ENCODING_PCM_16BIT)
+      {
+        audioByte[index_byte] = (byte)((pcm[i] >> 8) & 0xFF);
+        index_byte++;
+      }
+      //noinspection ConstantConditions
+      if (AUDIO_FORMAT == AudioFormat.CHANNEL_OUT_STEREO)
+      {
+        audioByte[index_byte] = audioByte[index_byte - 2];
+        index_byte++;
+        //noinspection ConstantConditions
+        if (AUDIO_ENCODING == AudioFormat.ENCODING_PCM_16BIT)
+        {
+          audioByte[index_byte] = audioByte[index_byte - 2];
+          index_byte++;
+        }
+      }
+    }
+    return audioByte;
+  }
+
+  public static void fadeOutFilter(short[] audio, double filterDurationInMs)
+  {
+    final int filterDurationInSamples = (int)Math.min(filterDurationInMs * AUDIO_SAMPLE_RATE_HZ / 1000, audio.length);
+    double fadeAmplification = 0;
+    int j;
+
+    for (int i = 0; i < filterDurationInSamples; i++)
+    {
+      j = audio.length - filterDurationInSamples + i;
+      fadeAmplification = (1 - (double)i/filterDurationInSamples);
+      audio[j] = (short)(fadeAmplification * audio[j]);
+    }
+  }
+
+  public static void fadeInFilter(short[] audio, double filterDurationInMs)
+  {
+    final int filterDurationInSamples = (int)Math.min(filterDurationInMs * AUDIO_SAMPLE_RATE_HZ / 1000, audio.length);
+    double fadeAmplification = 0;
+
+    for (int i = 0 ; i < filterDurationInSamples; i++)
+    {
+      fadeAmplification = (double)i/filterDurationInSamples;
+      audio[i] = (short)(fadeAmplification * audio[i]);
+    }
+  }
+
+  public static void releaseAudioTrack(AudioTrack audioTrack)
+  {
+    if (audioTrack == null) return;
+    if (audioTrack.getState() == AudioTrack.STATE_INITIALIZED)
+    {
+      audioTrack.pause();
+      // audioTrack.flush();
+    }
+    audioTrack.release();
+  }
+}
