@@ -40,7 +40,7 @@ public class TunerSmokeTest {
                 ins.runOnMainSync(()->a.findViewById(R.id.tab_tuner).performClick());Thread.sleep(120);
             }
             Thread.sleep(800);shell(ins,"screencap -p /sdcard/Download/tunebeat-tuner.png");
-            // Restoring the tuner page after recreation must not revive metronome playback.
+            // Returning to the metronome page must not revive playback.
             ins.runOnMainSync(()->a.findViewById(R.id.tab_metronome).performClick());
             assertFalse(MetronomeCore.getInstance().getIsPlaying());
         }finally{ins.runOnMainSync(()->{a.stopMetronome();a.finish();});ins.waitForIdleSync();}

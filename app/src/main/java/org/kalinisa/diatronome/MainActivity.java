@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private BeatDots dots;
     protected MetronomeCore core;
     private boolean tunerPage, resumed;
+    private boolean compact;
     private int selectedString=5;
     private Button tunerTab,metronomeTab,microphone;
     private final Button[] strings=new Button[6];
@@ -50,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     @Override protected void onCreate(Bundle state){
         super.onCreate(state);
         prefs=getSharedPreferences("tunebeat",MODE_PRIVATE);
+        compact=getResources().getConfiguration().screenHeightDp<700;
         Window w=getWindow();w.setStatusBarColor(ToolUi.BG);w.setNavigationBarColor(ToolUi.BG);
         WindowCompat.setDecorFitsSystemWindows(w,false);
         WindowCompat.getInsetsController(w,w.getDecorView()).setAppearanceLightStatusBars(false);
@@ -59,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
             androidx.core.graphics.Insets bars=insets.getInsets(WindowInsetsCompat.Type.systemBars()|WindowInsetsCompat.Type.displayCutout());
             view.setPadding(bars.left,bars.top,bars.right,bars.bottom);return insets;
         });
-        title=ToolUi.text(this,"节拍器",22,ToolUi.TEXT);root.addView(title,new LinearLayout.LayoutParams(-1,dp(64)));
+        title=ToolUi.text(this,"节拍器",22,ToolUi.TEXT);root.addView(title,new LinearLayout.LayoutParams(-1,dp(compact?48:64)));
         body=new FrameLayout(this);root.addView(body,new LinearLayout.LayoutParams(-1,0,1));
         setContentView(root);setVolumeControlStream(AudioManager.STREAM_MUSIC);
         showInitialPage();
@@ -103,22 +105,22 @@ public class MainActivity extends AppCompatActivity {
     }
     private void showTuner(){
         title.setText("调音器");LinearLayout content=page();content.setPadding(dp(22),0,dp(22),dp(8));
-        deviation=new DeviationView(this);content.addView(deviation,new LinearLayout.LayoutParams(-1,dp(112)));
-        status=ToolUi.text(this,"拨动琴弦",15,ToolUi.MUTED);status.setId(R.id.tuner_status);content.addView(status,new LinearLayout.LayoutParams(-1,dp(30)));
-        target=ToolUi.text(this,TuningMath.NOTES[selectedString],48,ToolUi.TEXT);target.setId(R.id.target_note);content.addView(target,new LinearLayout.LayoutParams(-1,dp(68)));
+        deviation=new DeviationView(this);content.addView(deviation,new LinearLayout.LayoutParams(-1,dp(compact?64:112)));
+        status=ToolUi.text(this,"拨动琴弦",15,ToolUi.MUTED);status.setId(R.id.tuner_status);content.addView(status,new LinearLayout.LayoutParams(-1,dp(compact?24:30)));
+        target=ToolUi.text(this,TuningMath.NOTES[selectedString],compact?38:48,ToolUi.TEXT);target.setId(R.id.target_note);content.addView(target,new LinearLayout.LayoutParams(-1,dp(compact?48:68)));
         LinearLayout instrument=new LinearLayout(this);instrument.setOrientation(LinearLayout.HORIZONTAL);instrument.setGravity(Gravity.CENTER);
         LinearLayout selectors=new LinearLayout(this);selectors.setOrientation(LinearLayout.VERTICAL);selectors.setGravity(Gravity.CENTER);
         int[] ids={R.id.string_1,R.id.string_2,R.id.string_3,R.id.string_4,R.id.string_5,R.id.string_6};
         for(int i=0;i<6;i++){
             final int index=i;Button b=roundButton(TuningMath.LETTERS[i]+"\n"+(i+1)+"弦",(i+1)+"弦 "+TuningMath.NOTES[i]);b.setId(ids[i]);b.setTextSize(17);b.setLineSpacing(0,.85f);
-            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(50),dp(50));lp.topMargin=dp(5);lp.bottomMargin=dp(5);selectors.addView(b,lp);strings[i]=b;b.setOnClickListener(v->selectString(index));
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(compact?44:50),dp(compact?44:50));lp.topMargin=dp(compact?2:5);lp.bottomMargin=dp(compact?2:5);selectors.addView(b,lp);strings[i]=b;b.setOnClickListener(v->selectString(index));
         }
         instrument.addView(selectors,new LinearLayout.LayoutParams(dp(60),-1));
         headstock=new HeadstockView(this);headstock.setListener(this::selectString);instrument.addView(headstock,new LinearLayout.LayoutParams(0,-1,1));
-        content.addView(instrument,new LinearLayout.LayoutParams(-1,dp(370)));
+        content.addView(instrument,new LinearLayout.LayoutParams(-1,dp(compact?288:370)));
         microphone=roundButton("开启麦克风，开始调音","开启麦克风，开始调音");microphone.setTextSize(14);microphone.setTextColor(ToolUi.MINT);microphone.setBackground(ToolUi.shape(ToolUi.PANEL,dp(12),0));microphone.setOnClickListener(v->enableMicrophone());
-        microphone.setVisibility(hasMicrophone()?View.GONE:View.VISIBLE);content.addView(microphone,new LinearLayout.LayoutParams(-1,dp(46)));
-        TextView standard=ToolUi.text(this,"标准六弦 · A₄ = 440 Hz",11,ToolUi.MUTED);content.addView(standard,new LinearLayout.LayoutParams(-1,dp(30)));
+        microphone.setVisibility(hasMicrophone()?View.GONE:View.VISIBLE);content.addView(microphone,0,new LinearLayout.LayoutParams(-1,dp(46)));
+        TextView standard=ToolUi.text(this,"标准六弦 · A₄ = 440 Hz",11,ToolUi.MUTED);content.addView(standard,new LinearLayout.LayoutParams(-1,dp(compact?22:30)));
         selectString(selectedString);
     }
     private void selectString(int string){
@@ -141,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
         body.removeAllViews();
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);
         LinearLayout content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setGravity(Gravity.CENTER_HORIZONTAL);
-        content.setPadding(dp(24),dp(12),dp(24),dp(16));
+        content.setPadding(dp(24),dp(compact?8:12),dp(24),dp(compact?8:16));
         scroll.addView(content,new ScrollView.LayoutParams(-1,-2));body.addView(scroll,new FrameLayout.LayoutParams(-1,-1));return content;
     }
     protected void ensureCore(){
@@ -153,19 +155,20 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout numbers=new LinearLayout(this);numbers.setGravity(Gravity.CENTER);numbers.setOrientation(LinearLayout.HORIZONTAL);
         Button minus=roundButton("−","速度减一");minus.setId(R.id.tempo_minus);numbers.addView(minus,new LinearLayout.LayoutParams(dp(52),dp(52)));
         LinearLayout readout=new LinearLayout(this);readout.setOrientation(LinearLayout.VERTICAL);readout.setGravity(Gravity.CENTER);
-        bpmText=ToolUi.text(this,""+core.getTempoBpm(),62,ToolUi.TEXT);bpmText.setId(R.id.tempo_value);bpmText.setContentDescription("输入每分钟拍数");bpmText.setOnClickListener(v->inputTempo());bpmText.setFocusable(true);
+        bpmText=ToolUi.text(this,""+core.getTempoBpm(),compact?54:62,ToolUi.TEXT);bpmText.setId(R.id.tempo_value);bpmText.setContentDescription("输入每分钟拍数");bpmText.setOnClickListener(v->inputTempo());bpmText.setFocusable(true);
         readout.addView(bpmText,new LinearLayout.LayoutParams(-1,-2));readout.addView(ToolUi.text(this,"每分钟拍数",12,ToolUi.MUTED));
-        numbers.addView(readout,new LinearLayout.LayoutParams(dp(172),-2));
+        numbers.addView(readout,new LinearLayout.LayoutParams(0,-2,1));
         Button plus=roundButton("+","速度加一");plus.setId(R.id.tempo_plus);numbers.addView(plus,new LinearLayout.LayoutParams(dp(52),dp(52)));
         minus.setOnClickListener(v->changeTempo(core.getTempoBpm()-1));plus.setOnClickListener(v->changeTempo(core.getTempoBpm()+1));
         content.addView(numbers,new LinearLayout.LayoutParams(-1,-2));
         int size=Math.min(dp(380),getResources().getDisplayMetrics().widthPixels-dp(48));
-        FrameLayout disk=new FrameLayout(this);LinearLayout.LayoutParams diskLp=new LinearLayout.LayoutParams(size,size);diskLp.topMargin=dp(24);content.addView(disk,diskLp);
+        if(compact)size=Math.min(size,dp(228));
+        FrameLayout disk=new FrameLayout(this);LinearLayout.LayoutParams diskLp=new LinearLayout.LayoutParams(size,size);diskLp.topMargin=dp(compact?12:24);content.addView(disk,diskLp);
         dial=new DialView(this);dial.setId(R.id.tempo_dial);dial.setTempo(core.getTempoBpm());dial.setListener(this::changeTempo);disk.addView(dial,new FrameLayout.LayoutParams(-1,-1));
         play=roundButton("▶","开始节拍");play.setId(R.id.play_pause);play.setTextColor(ToolUi.MINT);play.setTextSize(32);play.setBackground(ToolUi.shape(ToolUi.BG,dp(64),0));
         FrameLayout.LayoutParams p=new FrameLayout.LayoutParams(dp(112),dp(112),Gravity.CENTER);disk.addView(play,p);play.setOnClickListener(v->togglePlayback());
-        dots=new BeatDots(this);dots.setId(R.id.beat_dots);content.addView(dots,new LinearLayout.LayoutParams(-1,dp(42)));
-        TextView meter=ToolUi.text(this,"4/4",22,ToolUi.TEXT);LinearLayout.LayoutParams meterLp=new LinearLayout.LayoutParams(-1,dp(50));meterLp.topMargin=dp(14);content.addView(meter,meterLp);
+        dots=new BeatDots(this);dots.setId(R.id.beat_dots);content.addView(dots,new LinearLayout.LayoutParams(-1,dp(compact?28:42)));
+        TextView meter=ToolUi.text(this,"4/4",22,ToolUi.TEXT);LinearLayout.LayoutParams meterLp=new LinearLayout.LayoutParams(-1,dp(compact?34:50));meterLp.topMargin=dp(compact?6:14);content.addView(meter,meterLp);
         content.addView(ToolUi.text(this,"第一拍重音 · 每拍一下",12,ToolUi.MUTED));updatePlaying();
     }
     protected Button roundButton(String text,String description){
