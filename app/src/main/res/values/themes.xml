@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-  <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+  <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+    <item name="android:windowBackground">#191B1D</item>
+    <item name="colorAccent">#12C99E</item>
+    <item name="android:fontFamily">sans</item>
+    <item name="android:windowLightStatusBar">false</item>
+    <item name="android:windowLightNavigationBar">false</item>
     <!-- workaround issue on ?android/attr:textColorPrimary -->
 
     <item name="windowNoTitle">true</item>

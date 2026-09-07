@@ -54,7 +54,8 @@ public class MetronomeCore
   ASoundGenerator m_soundGeneratorAccent = null;
   ASoundGenerator m_soundGeneratorMain = null;
   ASoundGenerator m_soundGeneratorSubdivision = null;
-  int m_tempoBpm = 0;
+  volatile int m_tempoBpm = 0;
+  private int m_appliedTempoBpm = 0;
   int[] m_beatsConfig = new int[0];
   boolean m_isBidirectionalNeedle = false;
 
@@ -66,7 +67,7 @@ public class MetronomeCore
   private int m_forceTickOnBpmChange = -1;
   private final long[] m_tapLast;
   private int m_tapIndex = 0;
-  private AccuracyTimer m_timer = null;
+  private volatile AccuracyTimer m_timer = null;
   AudioTrack m_audioTrack = null;
   private byte[] m_waveAccent;
   private byte[] m_waveSubdiv;
@@ -74,7 +75,7 @@ public class MetronomeCore
   private byte[] m_waveSilence;
   private final Semaphore m_mutexTick;
   private boolean m_isReschedule = false;
-  private boolean m_forceInterrupt = false;
+  private volatile boolean m_forceInterrupt = false;
 
   private static MetronomeCore s_instance;
   private MetronomeCore()
@@ -93,7 +94,7 @@ public class MetronomeCore
     // Keep min buffer size to be reactive. (nb : start playing time depend of this buffer size. lower is better)
     m_audioTrack = AudioUtils.newAudioTrack(0, AudioTrack.MODE_STREAM);
 
-    m_audioTrack.setPlaybackPositionUpdateListener(new AudioTrack.OnPlaybackPositionUpdateListener()
+    if (m_audioTrack != null) m_audioTrack.setPlaybackPositionUpdateListener(new AudioTrack.OnPlaybackPositionUpdateListener()
     {
       @Override
       public void onMarkerReached(AudioTrack track)
@@ -287,26 +288,8 @@ public class MetronomeCore
   }
   public void setTempoBpm(int value)
   {
-    // Prevent extra tick on recreate
-    if (m_tempoBpm == value) return;
-    m_tempoBpm = value;
-    int currentTick = m_currentTick.get();
-    if (getIsPlaying() && currentTick >= 0)
-    {
-      sendMessage(HANDLER_MSG_TICK, currentTick, m_beatsConfig[currentTick]);
-      // Rescheduled according to the new period.
-      // Do not replay the same tick nor it will break animation
-      scheduleTick(DELAY_MS_ON_BPM_CHANGE);
-    }
-
-    // Recompute tone according new tempo
-    if (!m_soundGeneratorAccent.isContinuous())
-      m_regenerateToneAccent = true;
-    if (!m_soundGeneratorMain.isContinuous())
-      m_regenerateToneMain = true;
-    if (!m_soundGeneratorSubdivision.isContinuous())
-      m_regenerateToneSubdivision = true;
-    setupTone();
+    m_tempoBpm = Math.max(30, Math.min(240, value));
+    if (!getIsPlaying()) setupTone();
   }
 
   public int getPeriodMs()
@@ -324,7 +307,7 @@ public class MetronomeCore
     int length = m_tapLast.length;
     long period = 0;
     int n = 0;
-    m_tapLast[m_tapIndex] = System.currentTimeMillis();
+    m_tapLast[m_tapIndex] = android.os.SystemClock.elapsedRealtime();
 
     for (int i = 0; i < length - 1; i++)
     {
@@ -399,43 +382,26 @@ public class MetronomeCore
   }
   public int getCurrentTick() { return m_currentTick.get(); }
 
-  public void stop()
+  public synchronized void stop()
   {
-    // Do not acquire mutex, this may be call from onDestroy with the same thread,
-    // provoking auto mutual exclusion
-    if (m_timer != null)
-    {
-      try
-      {
-        Utils.mutexTryAcquire(m_mutexTick, 300);
-        // Do not matter how the mutex is taken or not. We force the stop
-        // Cancel will brutally stop the timer
-        if (m_audioTrack != null &&
-          m_audioTrack.getPlayState() == AudioTrack.PLAYSTATE_PLAYING)
-        {
-          m_audioTrack.stop();
-        }
-        m_timer.cancel();
-        m_timer.purge();
-        m_timer = null;
-        sendMessage(HANDLER_MSG_TICK, -1, -1);
-        sendMessage(HANDLER_MSG_PLAY, 0, 0);
-        m_currentTick.set(-1);
-        m_forceTickOnBpmChange = -1;
-      }
-      // If we cancel the timer during job
-      finally
-      {
-        m_mutexTick.release();
-      }
+    AccuracyTimer previous = m_timer;
+    m_timer = null;
+    if (previous != null) previous.cancel();
+    if (m_audioTrack != null && m_audioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
+      m_audioTrack.pause(); m_audioTrack.flush();
     }
+    m_currentTick.set(-1); m_forceTickOnBpmChange = -1;
+    sendMessage(HANDLER_MSG_TICK, -1, -1);
+    sendMessage(HANDLER_MSG_PLAY, 0, 0);
   }
 
   public void play()
   {
+    if (getIsPlaying()) return;
+    m_forceInterrupt = false;
+    if (!Utils.mutexTryAcquire(m_mutexTick, 100)) return;
     try
     {
-      if (!Utils.mutexTryAcquire(m_mutexTick, 100)) return;
       if (m_regenerateToneAccent || m_regenerateToneMain || m_regenerateToneSubdivision)
       {
         setupTone();
@@ -523,7 +489,7 @@ public class MetronomeCore
     int r = 0;
     int offset = 0;
     long tsEnd = 0;
-    long tsStart = System.currentTimeMillis();
+    long tsStart = android.os.SystemClock.elapsedRealtime();
     if (m_audioTrack == null || wave == null) return;
     int wavelen = wave.length;
 
@@ -550,7 +516,7 @@ public class MetronomeCore
       {
         Log.w (SettingsCore.getInstance().getClass().getName(), "Can not write audio track error: " + r);
       }
-      tsEnd = System.currentTimeMillis();
+      tsEnd = android.os.SystemClock.elapsedRealtime();
       timeoutMs -= (tsEnd - tsStart);
       tsStart = tsEnd;
 
@@ -565,16 +531,24 @@ public class MetronomeCore
   private void tick()
   {
     byte[] waveCurrent = null;
-    final long stopWatch = System.currentTimeMillis();
+    final long stopWatch = android.os.SystemClock.elapsedRealtime();
     long elapsedTime = 0;
     int remainingBytes = 0;
     int currentTick = 0;
     double durationMs = 0;
-    final int periodMs = getPeriodMs();
+    final int bpm = m_tempoBpm;
+    final int periodMs = 60000 / Math.max(30, bpm);
     if (m_beatsConfig.length <= 0) return;
     if (!Utils.mutexTryAcquire(m_mutexTick, periodMs)) return;
     try
     {
+      // Apply a requested speed only at the next beat boundary.
+      if (m_timer != null) m_timer.updatePeriodMs(periodMs);
+      if (m_appliedTempoBpm != bpm) {
+        m_appliedTempoBpm = bpm;
+        m_regenerateToneAccent = m_regenerateToneMain = m_regenerateToneSubdivision = true;
+        setupTone();
+      }
       // Setup next
       if (m_forceTickOnBpmChange > 0)
       {
@@ -612,7 +586,6 @@ public class MetronomeCore
       if (m_audioTrack == null)
       {
         sendMessage(HANDLER_MSG_TICK, currentTick, m_beatsConfig[currentTick]);
-        m_mutexTick.release();
         return;
       }
       else if (getIsPlaying())
@@ -627,14 +600,14 @@ public class MetronomeCore
       // Warm-up audio by writing silent. The audio may start from 0 to 45 ms after write, or never start if buffer have not enough data
       // In first part, measure warm-up time. When,writing the second part, we adjust frame to have exactly a latency time before the clip
       writeAudioTrack(m_waveSilence, AudioUtils.getAudioByteLen(AUDIO_LATENCY_MS / 2), AUDIO_LATENCY_MS);
-      elapsedTime = System.currentTimeMillis() - stopWatch;
+      elapsedTime = android.os.SystemClock.elapsedRealtime() - stopWatch;
 
       // Wait for audio starting
       while (m_audioTrack.getPlaybackHeadPosition() <= 0 && elapsedTime < AUDIO_LATENCY_MS)
       {
         checkForceInterrupt();
         Thread.sleep (1);
-        elapsedTime = System.currentTimeMillis() - stopWatch;
+        elapsedTime = android.os.SystemClock.elapsedRealtime() - stopWatch;
       }
 
       // Compute the remaining bytes to write to have constant warm-up time.

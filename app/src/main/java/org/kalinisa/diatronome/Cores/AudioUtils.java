@@ -65,7 +65,7 @@ public class AudioUtils
 
   private static int AudioTrack_getAudioFormat(int sampleRateInHz, int channelConfig)
   {
-    if (AudioTrack.getMinBufferSize(sampleRateInHz, channelConfig, AudioFormat.CHANNEL_OUT_STEREO) > 0)
+    if (AudioTrack.getMinBufferSize(sampleRateInHz, AudioFormat.CHANNEL_OUT_STEREO, channelConfig) > 0)
     {
       return AudioFormat.CHANNEL_OUT_STEREO;
     }

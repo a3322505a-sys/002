@@ -1,516 +1,120 @@
 package org.kalinisa.diatronome;
 
-import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.WindowManager;
-import android.widget.TextView;
-
-import androidx.activity.OnBackPressedCallback;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBar;
+import android.view.Gravity;
+import android.view.View;
+import android.view.Window;
+import android.widget.*;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-
-import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.ActivityCompat;
-import androidx.preference.PreferenceManager;
-
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowCompat;
 import org.kalinisa.diatronome.Cores.MetronomeCore;
 import org.kalinisa.diatronome.Cores.MetronomePlaybackService;
-import org.kalinisa.diatronome.Cores.PlayNoteCore;
-import org.kalinisa.diatronome.Cores.SettingsCore;
-import org.kalinisa.diatronome.Cores.UiCore;
-import org.kalinisa.diatronome.Fragment.MetronomeFragment;
-import org.kalinisa.diatronome.Fragment.PlaynoteFragment;
-import org.kalinisa.diatronome.Fragment.TunerFragment;
-import org.kalinisa.diatronome.Ui.MetronomeView;
-import org.kalinisa.diatronome.Ui.NeedleView;
-import org.kalinisa.diatronome.Cores.SoundAnalyzeCore;
+import org.kalinisa.diatronome.Tools.*;
 
-public class MainActivity extends AppCompatActivity
-{
-  private Menu m_menu;
-  private int m_primaryColor = 0;
-  private boolean m_permissionToRecordAccepted = false;
-  // Have to be static to be robust to recreate
-  private static int m_currentItem = 0;
-  private int m_homeLayout = 0;
-  private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
-
-  private final String FRAGMENT_TAG_TUNER = "fragment_tag_tuner";
-  private final String FRAGMENT_TAG_PLAYNOTE = "fragment_tag_playnote";
-  private final String FRAGMENT_TAG_METRONOME = "fragment_tag_metronome";
-
-  @Override
-  protected void onCreate(Bundle savedInstanceState)
-  {
-    super.onCreate(savedInstanceState);
-
-    this.setupUiCore();
-    this.setupTunerCore();
-    this.setupMetonomeCore();
-
-    // Prepare settings
-    PreferenceManager.setDefaultValues(this, R.xml.preferences, true);
-    SharedPreferences sharedPreferences =
-      PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-    m_primaryColor = sharedPreferences.getInt(SettingsCore.SETTING_COLOR, 0);
-    m_homeLayout = UiCore.getHomeLayoutFormName(sharedPreferences.getString(SettingsCore.SETTING_HOME_SCREEN, ""));
-    SettingsActivity.applyAllSettings(this.getApplicationContext());
-
-    // Apply theme (before setContentView and load settings (change color call finish()).
-    int themeId = UiCore.getThemeIdFromColor(getApplicationContext(), m_primaryColor);
-    getTheme().applyStyle(themeId, true);
-
-    setContentView(R.layout.activity_main);
-
-    OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled by default */) {
-      @Override
-      public void handleOnBackPressed()
-      {
-        if (m_currentItem != m_homeLayout)
-          navigateTo(m_homeLayout);
-        else
-          finish();
-      }
+public class MainActivity extends AppCompatActivity {
+    protected SharedPreferences prefs;
+    protected LinearLayout root;
+    protected FrameLayout body;
+    protected TextView title;
+    private TextView bpmText;
+    private Button play;
+    private DialView dial;
+    private BeatDots dots;
+    protected MetronomeCore core;
+    private final Handler messages=new Handler(Looper.getMainLooper()){
+        @Override public void handleMessage(Message msg){
+            if(msg.what==MetronomeCore.HANDLER_MSG_TICK && dots!=null)dots.setBeat(msg.arg1);
+            if(msg.what==MetronomeCore.HANDLER_MSG_PLAY)updatePlaying();
+        }
     };
-    getOnBackPressedDispatcher().addCallback(this, callback);
-
-    Toolbar toolbar = findViewById(R.id.toolbar);
-    setSupportActionBar(toolbar);
-    ActionBar actionBar = getSupportActionBar();
-    if (actionBar != null)
-    {
-      actionBar.setTitle("");
-
-      actionBar.setHomeButtonEnabled(false);
-      actionBar.setDisplayHomeAsUpEnabled(false);
-      actionBar.setDisplayShowHomeEnabled(false);
+    @Override protected void onCreate(Bundle state){
+        super.onCreate(state);
+        prefs=getSharedPreferences("tunebeat",MODE_PRIVATE);
+        Window w=getWindow();w.setStatusBarColor(ToolUi.BG);w.setNavigationBarColor(ToolUi.BG);
+        WindowCompat.setDecorFitsSystemWindows(w,false);
+        WindowCompat.getInsetsController(w,w.getDecorView()).setAppearanceLightStatusBars(false);
+        WindowCompat.getInsetsController(w,w.getDecorView()).setAppearanceLightNavigationBars(false);
+        root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(ToolUi.BG);
+        ViewCompat.setOnApplyWindowInsetsListener(root,(view,insets)->{
+            androidx.core.graphics.Insets bars=insets.getInsets(WindowInsetsCompat.Type.systemBars()|WindowInsetsCompat.Type.displayCutout());
+            view.setPadding(bars.left,bars.top,bars.right,bars.bottom);return insets;
+        });
+        title=ToolUi.text(this,"节拍器",22,ToolUi.TEXT);root.addView(title,new LinearLayout.LayoutParams(-1,dp(64)));
+        body=new FrameLayout(this);root.addView(body,new LinearLayout.LayoutParams(-1,0,1));
+        setContentView(root);setVolumeControlStream(AudioManager.STREAM_MUSIC);
+        showInitialPage();
     }
-
-    // Set volume control to media instead of ringtone
-    setVolumeControlStream(AudioManager.STREAM_MUSIC);
-
-    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
-    {
-      ActivityCompat.requestPermissions(this,
-      new String[]{ android.Manifest.permission.RECORD_AUDIO },
-        REQUEST_RECORD_AUDIO_PERMISSION);
+    protected void showInitialPage(){showMetronome();}
+    protected int dp(float n){return ToolUi.dp(this,n);}
+    protected LinearLayout page(){
+        body.removeAllViews();
+        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);
+        LinearLayout content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setGravity(Gravity.CENTER_HORIZONTAL);
+        content.setPadding(dp(24),dp(12),dp(24),dp(16));
+        scroll.addView(content,new ScrollView.LayoutParams(-1,-2));body.addView(scroll,new FrameLayout.LayoutParams(-1,-1));return content;
     }
-    else
-    {
-      m_permissionToRecordAccepted = true;
+    protected void ensureCore(){
+        if(core==null){core=MetronomeCore.getInstance();MetronomePlaybackService.configure(this,core);}
+        core.setHandler(messages);
     }
-  }
-
-  @Override
-  public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults)
-  {
-    super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-    //noinspection SwitchStatementWithTooFewBranches
-    switch (requestCode)
-    {
-      case REQUEST_RECORD_AUDIO_PERMISSION:
-        m_permissionToRecordAccepted = (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED);
-        if (!m_permissionToRecordAccepted)
-        {
-          android.util.Log.w(getString(R.string.app_name), "Permission to record audio not granted");
-        }
-        break;
-      default:
-        break;
+    protected void showMetronome(){
+        title.setText("节拍器");ensureCore();LinearLayout content=page();
+        LinearLayout numbers=new LinearLayout(this);numbers.setGravity(Gravity.CENTER);numbers.setOrientation(LinearLayout.HORIZONTAL);
+        Button minus=roundButton("−","速度减一");minus.setId(R.id.tempo_minus);numbers.addView(minus,new LinearLayout.LayoutParams(dp(52),dp(52)));
+        LinearLayout readout=new LinearLayout(this);readout.setOrientation(LinearLayout.VERTICAL);readout.setGravity(Gravity.CENTER);
+        bpmText=ToolUi.text(this,""+core.getTempoBpm(),62,ToolUi.TEXT);bpmText.setId(R.id.tempo_value);bpmText.setContentDescription("输入每分钟拍数");bpmText.setOnClickListener(v->inputTempo());bpmText.setFocusable(true);
+        readout.addView(bpmText,new LinearLayout.LayoutParams(-1,-2));readout.addView(ToolUi.text(this,"每分钟拍数",12,ToolUi.MUTED));
+        numbers.addView(readout,new LinearLayout.LayoutParams(dp(172),-2));
+        Button plus=roundButton("+","速度加一");plus.setId(R.id.tempo_plus);numbers.addView(plus,new LinearLayout.LayoutParams(dp(52),dp(52)));
+        minus.setOnClickListener(v->changeTempo(core.getTempoBpm()-1));plus.setOnClickListener(v->changeTempo(core.getTempoBpm()+1));
+        content.addView(numbers,new LinearLayout.LayoutParams(-1,-2));
+        int size=Math.min(dp(380),getResources().getDisplayMetrics().widthPixels-dp(48));
+        FrameLayout disk=new FrameLayout(this);LinearLayout.LayoutParams diskLp=new LinearLayout.LayoutParams(size,size);diskLp.topMargin=dp(24);content.addView(disk,diskLp);
+        dial=new DialView(this);dial.setId(R.id.tempo_dial);dial.setTempo(core.getTempoBpm());dial.setListener(this::changeTempo);disk.addView(dial,new FrameLayout.LayoutParams(-1,-1));
+        play=roundButton("▶","开始节拍");play.setId(R.id.play_pause);play.setTextColor(ToolUi.MINT);play.setTextSize(32);play.setBackground(ToolUi.shape(ToolUi.BG,dp(64),0));
+        FrameLayout.LayoutParams p=new FrameLayout.LayoutParams(dp(112),dp(112),Gravity.CENTER);disk.addView(play,p);play.setOnClickListener(v->togglePlayback());
+        dots=new BeatDots(this);dots.setId(R.id.beat_dots);content.addView(dots,new LinearLayout.LayoutParams(-1,dp(42)));
+        TextView meter=ToolUi.text(this,"4/4",22,ToolUi.TEXT);LinearLayout.LayoutParams meterLp=new LinearLayout.LayoutParams(-1,dp(50));meterLp.topMargin=dp(14);content.addView(meter,meterLp);
+        content.addView(ToolUi.text(this,"第一拍重音 · 每拍一下",12,ToolUi.MUTED));updatePlaying();
     }
-  }
-
-  @Override
-  public void onResume()
-  {
-    super.onResume();
-    // cause IllegalStateException. navigateTo(m_currentItem); Trust onPostResume
-  }
-
-  @Override
-  public void onPause()
-  {
-    PlayNoteCore.getInstance().stopAllPlaying();
-    SoundAnalyzeCore.getInstance().stopFromUi();
-    // Keep metronome running in background
-    // MetronomeCore.getInstance().stop();
-    super.onPause();
-  }
-
-  @Override
-  public boolean onCreateOptionsMenu(Menu menu)
-  {
-    m_menu = menu;
-    // Inflate the menu; this adds items to the action bar if it is present.
-    getMenuInflater().inflate(R.menu.menu_main, menu);
-
-    navigateTo(0);
-    return true;
-  }
-
-  public void onPostResume()
-  {
-    super.onPostResume();
-    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-    if (MetronomeCore.getInstance().getIsPlaying())
-    {
-      navigateTo(R.layout.fragment_metronome);
+    protected Button roundButton(String text,String description){
+        Button b=new Button(this);b.setText(text);b.setTextSize(26);b.setTextColor(ToolUi.TEXT);b.setAllCaps(false);b.setPadding(0,0,0,0);b.setMinWidth(0);b.setMinimumWidth(0);b.setMinHeight(0);b.setMinimumHeight(0);
+        b.setBackground(ToolUi.shape(ToolUi.BG,dp(32),0xff737b84));b.setContentDescription(description);return b;
     }
-    else
-    {
-      navigateTo(0);
+    private void inputTempo(){
+        EditText input=new EditText(this);input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);input.setText(""+core.getTempoBpm());input.selectAll();input.setTextColor(ToolUi.TEXT);input.setPadding(dp(24),dp(14),dp(24),dp(14));
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("每分钟拍数").setMessage("30–240 BPM").setView(input).setNegativeButton("取消",null).setPositiveButton("确定",null).create();
+        dialog.setOnShowListener(d->{dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+            try{int n=Integer.parseInt(input.getText().toString().trim());if(n<30||n>240)throw new NumberFormatException();changeTempo(n);dialog.dismiss();}
+            catch(NumberFormatException e){input.setError("请输入 30–240 的整数");}
+        });});dialog.show();input.requestFocus();dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
     }
-  }
-
-  @Override
-  protected void onSaveInstanceState(Bundle outState)
-  {
-    // https://stackoverflow.com/questions/7575921/illegalstateexception-can-not-perform-this-action-after-onsaveinstancestate-wit
-    // exception "IllegalStateException: Can not perform this action after onSaveInstanceState
-    // may occurs when activity goes in background
-
-    // Put something in out state to preserve onSaveInstance
-    outState.putString("WORKAROUND_FOR_BUG_19917_KEY", "WORKAROUND_FOR_BUG_19917_VALUE");
-    super.onSaveInstanceState(outState);
-    // Can be avoided by using commitAllowingStateLoss
-  }
-
-  @Override
-  public boolean onOptionsItemSelected(@NonNull MenuItem item)
-  {
-    // Handle action bar item clicks here. The action bar will
-    // automatically handle clicks on the Home/Up button, so long
-    // as you specify a parent activity in AndroidManifest.xml.
-    int id = item.getItemId();
-
-    //noinspection SimplifiableIfStatement
-    boolean isHandled = false;
-
-    if (id == R.id.action_tuner)
-    {
-      navigateTo(R.layout.fragment_tuner);
-      isHandled = true;
+    private void changeTempo(int value){
+        int bpm=Math.max(30,Math.min(240,value));core.setTempoBpm(bpm);prefs.edit().putInt("bpm",bpm).apply();bpmText.setText(""+bpm);dial.setTempo(bpm);
     }
-    else if (id ==  R.id.action_playnote)
-    {
-      navigateTo(R.layout.fragment_playnote);
-      isHandled = true;
+    protected void togglePlayback(){
+        if(core.getIsPlaying())stopMetronome();
+        else{
+            if(android.os.Build.VERSION.SDK_INT>=33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED && !prefs.getBoolean("notificationAsked",false)){
+                prefs.edit().putBoolean("notificationAsked",true).apply();requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},401);
+            }
+            Intent i=new Intent(this,MetronomePlaybackService.class).setAction(MetronomePlaybackService.PLAY);androidx.core.content.ContextCompat.startForegroundService(this,i);}
     }
-    else if (id == R.id.action_metronome)
-    {
-      navigateTo(R.layout.fragment_metronome);
-      isHandled = true;
+    protected void stopMetronome(){
+        if(core!=null)core.stop();stopService(new Intent(this,MetronomePlaybackService.class));updatePlaying();
     }
-    else if (id == R.id.action_settings)
-    {
-      if (m_currentItem == R.layout.fragment_tuner)
-      {
-        SettingsActivity.s_autoscrollOption = null;
-      }
-      else if (m_currentItem == R.layout.fragment_metronome)
-      {
-        SettingsActivity.s_autoscrollOption = SettingsCore.SETTING_METRONOME_WAVEFORM_ACCENT;
-      }
-      else if (m_currentItem == R.layout.fragment_playnote)
-      {
-        SettingsActivity.s_autoscrollOption = SettingsCore.SETTING_PIANO_WAVEFORM;
-      }
-      else
-      {
-        SettingsActivity.s_autoscrollOption = null;
-      }
-
-      MetronomeCore.getInstance().stop();
-      stopService(new Intent(this, MetronomePlaybackService.class));
-      startActivity(new Intent(MainActivity.this, SettingsActivity.class));
-      isHandled = true;
+    private void updatePlaying(){
+        if(play==null||core==null)return;boolean active=core.getIsPlaying();play.setText(active?"Ⅱ":"▶");play.setContentDescription(active?"暂停节拍":"开始节拍");if(!active&&dots!=null)dots.setBeat(-1);
     }
-    else
-    {
-      // Do nothing
-    }
-
-    if (!isHandled)
-    {
-      isHandled = super.onOptionsItemSelected(item);
-    }
-
-    return isHandled;
-  }
-
-  private void setupUiCore()
-  {
-    Handler themeHandler = new Handler(this.getMainLooper())
-    {
-      @Override
-      public void handleMessage(@NonNull Message msg)
-      {
-        if (msg.what == UiCore.HANDLER_MSG_CHANGE_COLOR)
-        {
-          updateColor(msg.arg1);
-        }
-        else if (msg.what == UiCore.HANDLER_MSG_KEEP_SCREEN_ON)
-        {
-          if (msg.arg1 != 0)
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-          else
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        }
-        else if (msg.what == UiCore.HANDLER_MSG_NOTE_STRING_CHANGE)
-        {
-          notifyNoteStringChanged();
-        }
-        else if (msg.what == UiCore.HANDLER_MSG_HOME_SCREEN_CHANGE)
-        {
-          m_homeLayout = msg.arg1;
-        }
-        else if (msg.what == UiCore.HANDLER_MSG_FPS_CHANGE)
-        {
-          notifyFpsChanged(msg.arg1);
-        }
-      }
-    };
-    UiCore.getInstance().setHandler(themeHandler);
-  }
-
-  private void setupTunerCore()
-  {
-    Handler needleInfoHandler = new Handler(this.getMainLooper())
-    {
-      @Override
-      public void handleMessage(@NonNull Message msg)
-      {
-        if (msg.what == SoundAnalyzeCore.HANDLER_MSG_UPDATE_NEEDLE)
-        {
-          updateNeedleView((SoundAnalyzeCore.NeedleParameters) msg.obj);
-        }
-      }
-    };
-    SoundAnalyzeCore.getInstance().setHandler(needleInfoHandler);
-  }
-
-  private void setupMetonomeCore()
-  {
-    Handler metronomeHandler = new Handler(this.getMainLooper())
-    {
-      @Override
-      public void handleMessage(@NonNull Message msg)
-      {
-        if (msg.what == MetronomeCore.HANDLER_MSG_TICK)
-        {
-          updateMetronomeTick (msg.arg1);
-        }
-        else if (msg.what == MetronomeCore.HANDLER_MSG_PLAY)
-        {
-          updateMetronomePlay (msg.arg1 != 0);
-        }
-        else if (msg.what == MetronomeCore.HANDLER_MSG_TEMPO)
-        {
-          updateMetronomeNewTempo(msg.arg1);
-        }
-      }
-    };
-    MetronomeCore.getInstance().setHandler(metronomeHandler);
-  }
-
-  private void navigateTo(int idLayout)
-  {
-    // Recover from memory
-    if (idLayout == 0) idLayout = m_currentItem;
-    else if (m_currentItem == idLayout) return;
-    if (m_menu == null) return;
-
-    // Restart core if necessary
-    // Metronome may run according to the use.
-    PlayNoteCore.getInstance().stopAllPlaying();
-    SoundAnalyzeCore.getInstance().stopFromUi();
-    if (idLayout == R.layout.fragment_tuner)
-    {
-      if (m_permissionToRecordAccepted)
-      {
-        SoundAnalyzeCore.getInstance().startFromUi();
-      }
-    }
-    else if (idLayout == R.layout.fragment_playnote)
-    {
-      MetronomeCore.getInstance().stop();
-      stopService(new Intent(this, MetronomePlaybackService.class));
-    }
-
-    if (idLayout == R.layout.fragment_tuner)
-    {
-      getSupportFragmentManager()
-        .beginTransaction()
-        .replace(R.id.layoutMainContent, new TunerFragment(), FRAGMENT_TAG_TUNER)
-        // .addToBackStack(null)
-        .commitAllowingStateLoss();
-    }
-    else if (idLayout == R.layout.fragment_playnote)
-    {
-      getSupportFragmentManager()
-        .beginTransaction()
-        .replace(R.id.layoutMainContent, new PlaynoteFragment(), FRAGMENT_TAG_PLAYNOTE)
-        // .addToBackStack(null)
-        .commitAllowingStateLoss();
-    }
-    else if (idLayout == R.layout.fragment_metronome)
-    {
-      getSupportFragmentManager()
-        .beginTransaction()
-        .replace(R.id.layoutMainContent, new MetronomeFragment(), FRAGMENT_TAG_METRONOME)
-        // .addToBackStack(null)
-        .commitAllowingStateLoss();
-    }
-    else
-    {
-      if (m_homeLayout != 0)
-      {
-        navigateTo(m_homeLayout);
-      }
-      return;
-    }
-    m_currentItem = idLayout;
-
-    if (m_menu != null)
-    {
-      MenuItem itemTuner = m_menu.findItem(R.id.action_tuner);
-      MenuItem itemMetronome = m_menu.findItem(R.id.action_metronome);
-      MenuItem itemPlaynote = m_menu.findItem(R.id.action_playnote);
-      if (itemTuner != null)
-      {
-        itemTuner.setVisible(idLayout != R.layout.fragment_tuner);
-      }
-      if (itemPlaynote != null)
-      {
-        itemPlaynote.setVisible(idLayout != R.layout.fragment_playnote);
-      }
-      if (itemMetronome != null)
-      {
-        itemMetronome.setVisible(idLayout != R.layout.fragment_metronome);
-      }
-    }
-  }
-
-  // or can use thisActivity.runOnUiThread from the this
-  // run() { someWork(); this.runOnUiThread( updateUi()); }
-  // Caution: the view can be not found on change (change orientation, ...)
-  @SuppressLint("SetTextI18n")
-  private void updateNeedleView(SoundAnalyzeCore.NeedleParameters parameters)
-  {
-    NeedleView needleView = findViewById(R.id.viewNeedle);
-    // Can be temporary null on rotate...
-    if (needleView != null)
-    {
-      needleView.updateAccuracy(parameters.accuracy);
-    }
-
-    // Change the labels
-    TextView txtMeasure = findViewById(R.id.btnMeasure);
-    if (txtMeasure != null)
-    {
-      String percentile = "" + (parameters.accuracy < 0 ? "" : "+") + Math.round(parameters.accuracy * 50) + " c";
-      @SuppressLint("DefaultLocale") String frequency = String.format("%,.1f", parameters.frequency) + " Hz";
-      // @SuppressLint("DefaultLocale") String decibel = String.format("%,.1f", parameters.intensity) + " %";
-      String decibel = ""; // not pertinent for now
-      txtMeasure.setText(percentile + "\n" + frequency + "\n" + decibel);
-    }
-
-    TextView txtNote = findViewById(R.id.btnNote);
-    if (txtNote != null)
-    {
-      if (parameters.note >= 0 && parameters.octave >= 0)
-      {
-        txtNote.setText(UiCore.getInstance().getNoteName(getBaseContext().getResources(), parameters.octave, parameters.note));
-      }
-      else
-      {
-        txtNote.setText("-");
-      }
-    }
-  }
-
-  public void updateColor (int color)
-  {
-    // Avoid onCreate recursive loop.
-    if (m_primaryColor == color) return;
-    // Recreate the activity to apply theme (before the setContentView, done only one create)
-    finish();
-    Intent intent = new Intent(MainActivity.this, MainActivity.class);
-    intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-    startActivity(intent);
-
-    NeedleView needleView = findViewById(R.id.viewNeedle);
-    // Can be temporary null on rotate...
-    if (needleView != null)
-    {
-      needleView.setColorMain(color);
-    }
-
-    MetronomeView metronomeView = findViewById(R.id.viewMetronome);
-    if (metronomeView != null)
-    {
-      metronomeView.setColorMain(color);
-    }
-  }
-
-  private void notifyNoteStringChanged()
-  {
-    PlaynoteFragment fragment = (PlaynoteFragment)getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_PLAYNOTE);
-    if (fragment != null)
-    {
-      fragment.updateNoteName();
-    }
-  }
-
-  private void notifyFpsChanged(int fps)
-  {
-    TunerFragment tunerFragment = (TunerFragment)getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_TUNER);
-    if (tunerFragment != null)
-    {
-      tunerFragment.setFps(fps);
-    }
-
-    MetronomeFragment metronomeFragment = (MetronomeFragment)getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_METRONOME);
-    if (metronomeFragment != null)
-    {
-      metronomeFragment.setFps(fps);
-    }
-  }
-
-  private void updateMetronomeTick(int tickNb)
-  {
-    MetronomeFragment fragment = (MetronomeFragment)getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_METRONOME);
-    if (fragment != null)
-    {
-      fragment.setTick(tickNb);
-    }
-  }
-
-  private void updateMetronomePlay(boolean isPlaying)
-  {
-    MetronomeFragment fragment = (MetronomeFragment)getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_METRONOME);
-    if (fragment != null)
-    {
-      fragment.setPlay(isPlaying);
-    }
-  }
-
-  private void updateMetronomeNewTempo(int bpm)
-  {
-    MetronomeFragment fragment = (MetronomeFragment)getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_METRONOME);
-    if (fragment != null)
-    {
-      fragment.setTempo(bpm);
-    }
-  }
+    @Override protected void onResume(){super.onResume();if(core!=null)core.setHandler(messages);updatePlaying();}
+    @Override protected void onDestroy(){if(core!=null)core.setHandler(null);messages.removeCallbacksAndMessages(null);super.onDestroy();}
 }
