@@ -19,9 +19,9 @@ public final class DeviationView extends View {
         float x=cx+(float)Math.max(-50,Math.min(50,cents))*w*.0076f;
         int color=Math.abs(cents)<=5?ToolUi.MINT:0xffecaa7c;
         p.setColor(color);p.setStrokeWidth(ToolUi.dp(getContext(),2));c.drawLine(x,h*.32f,x,h*.76f,p);
-        float r=ToolUi.dp(getContext(),22);p.setColor(ToolUi.PANEL);c.drawCircle(x,h*.25f,r,p);
-        p.setColor(color);p.setStyle(Paint.Style.STROKE);c.drawCircle(x,h*.25f,r,p);p.setStyle(Paint.Style.FILL);
-        Path tip=new Path();tip.moveTo(x-5,h*.25f+r);tip.lineTo(x+5,h*.25f+r);tip.lineTo(x,h*.25f+r+7);tip.close();c.drawPath(tip,p);
-        p.setColor(ToolUi.TEXT);p.setTextSize(ToolUi.dp(getContext(),13));c.drawText(String.format(java.util.Locale.ROOT,"%+.0f",cents),x,h*.25f+p.getTextSize()*.34f,p);
+        float r=ToolUi.dp(getContext(),22),cy=Math.max(r+1,h*.25f);p.setColor(ToolUi.PANEL);c.drawCircle(x,cy,r,p);
+        p.setColor(color);p.setStyle(Paint.Style.STROKE);c.drawCircle(x,cy,r,p);p.setStyle(Paint.Style.FILL);
+        Path tip=new Path();tip.moveTo(x-5,cy+r);tip.lineTo(x+5,cy+r);tip.lineTo(x,cy+r+7);tip.close();c.drawPath(tip,p);
+        p.setColor(ToolUi.TEXT);p.setTextSize(ToolUi.dp(getContext(),13));c.drawText(String.format(java.util.Locale.ROOT,"%+.0f",cents),x,cy+p.getTextSize()*.34f,p);
     }
 }
