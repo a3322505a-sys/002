@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="about_content"><![CDATA[
+    <b><i>Diatronome</i></b> propose un <i>accordeur</i>, un <i>métronome visuel</i> et un <i>synthétiseur</i>.
+    Cette application est libre de source, respectant la vie privée et sans publicité.<br/>
+    <b>Licence: </b>%1$s<br/>
+    <b>Sources: </b><a href="%2$s">%2$s</a><br/>
+    <b>Soutenir: </b><a href="%3$s">%3$s</a><br/>
+  ]]></string>
+  <string name="common_yes">Oui</string>
+  <string name="common_no">Non</string>
+  <string name="action_settings">Paramètres</string>
+  <string name="action_tuner">Tuner</string>
+  <string name="action_playnote">Synthétiseur</string>
+  <string name="action_metronome">Métronome</string>
+  <string name="action_about">À propos</string>
+  <string name="metronome_bpm">BPM</string>
+  <string name="metronome_timesignature">Signature de temps</string>
+  <string name="metronome_division">Temps</string>
+  <string name="metronome_subdivision">Sous-divisions</string>
+  <string name="metronome_notificationtitle">Son du métronome</string>
+
+  <!-- Preferences -->
+  <string name="preference_system_title">Système</string>
+  <string name="preference_system_theme">Thème</string>
+  <string name="preference_system_screenon">Garder l\'écran allumé</string>
+  <string name="preference_system_color">Couleur de l\'application</string>
+  <string name="preference_system_homescreen">Écran d\'accueil</string>
+
+  <string name="preference_tuner_title">Tuner</string>
+  <string name="preference_tuner_pitch">Calibration pour le La4</string>
+  <string name="preference_tuner_notename">Nom des notes</string>
+  <string name="preference_tuner_usesharpflat">♯ au lieu de ♭</string>
+  <string name="preference_tuner_transposition">Transposition</string>
+  <string name="preference_tuner_temperament">Tempérament</string>
+
+  <string name="preference_synthesizer_title">Synthétiseur</string>
+  <string name="preference_synthesizer_waveform">Timbre du piano</string>
+  <string name="preference_synthesizer_touchmode">Touches du piano</string>
+
+  <string name="preference_metronome_title">Métronome</string>
+  <string name="preference_metronome_waveformaccent">Timbre du métronome - accent</string>
+  <string name="preference_metronome_pitchaccent">Tonalité d\'accent du métronome</string>
+  <string name="preference_metronome_waveformmain">Timbre du métronome - principal</string>
+  <string name="preference_metronome_pitchmain">Tonalité principal du métronome</string>
+  <string name="preference_metronome_waveformsubdivision">Timbre du métronome - sous-divisions</string>
+  <string name="preference_metronome_pitchsubdivision">Tonalité de sous-divisions du métronome</string>
+  <string name="preference_metronome_bidirectionalneedle">Aiguille bi-directionnelle</string>
+
+  <string name="preference_advanced_title">Avancé</string>
+  <string name="preference_advanced_sensitivity">Sensibilité du microphone</string>
+  <string name="preference_advanced_algorithm">Algorithme</string>
+  <string name="preference_advanced_fps">Images par seconde</string>
+
+  <string-array name="array_notes_name">
+    <item>International (A B C)</item>
+    <item>Solfège (Do-Ré-Mi)</item>
+  </string-array>
+
+  <string-array name="array_notes_name_solfege">
+    <item>Do</item>
+    <item>Ré</item>
+    <item>Mi</item>
+    <item>Fa</item>
+    <item>Sol</item>
+    <item>La</item>
+    <item>Si</item>
+  </string-array>
+
+  <string-array name="array_theme">
+    <item>Suivre le système</item>
+    <item>Clair</item>
+    <item>Sombre</item>
+  </string-array>
+
+  <string-array name="array_homescreen">
+    <item>Tuner</item>
+    <item>Métronome</item>
+    <item>Piano</item>
+  </string-array>
+
+  <string-array name="array_transposition">
+    <item>Ut</item>
+    <item>Do&#x266F;</item>
+    <item>Ré</item>
+    <item>Mi&#x266D;</item>
+    <item>Mi</item>
+    <item>Fa</item>
+    <item>Fa&#x266F;</item>
+    <item>Sol</item>
+    <item>La&#x266D;</item>
+    <item>La</item>
+    <item>Si&#x266D;</item>
+    <item>Si</item>
+  </string-array>
+
+  <string-array name="array_temperament">
+    <item>Tempérament égal - 12 EDO</item>
+    <item>Pythagorien - ~53 EDO</item>
+    <item>Zarlino/Helmholtz - ~41 EDO</item>
+    <item>Mésotonique 1/4 comma - 31 EDO</item>
+    <item>Mésotonique 1/5 comma - 43 EDO</item>
+    <item>Mésotonique 1/3 comma - 19 EDO</item>
+    <item>Chromatique - 108 EDO</item>
+    <item>15 EDO, 15 TET</item>
+    <item>17 EDO, 17 TET</item>
+  </string-array>
+
+  <string-array name="array_waveform">
+    <item>Sinusoïdale</item>
+    <item>Triangulaire</item>
+    <item>Dents de scie</item>
+    <item>Carrée</item>
+    <item>Piano</item>
+    <item>Orgue</item>
+    <item>Tambour</item>
+    <item>Tom</item>
+    <item>Caisse claire</item>
+    <item>Cymbale</item>
+    <item>Steeldrum</item>
+    <item>Cloche</item>
+    <item>Guitare</item>
+    <item>Laser</item>
+  </string-array>
+
+  <string-array name="array_pianotouch">
+    <item>Persistantes</item>
+    <item>Normales</item>
+  </string-array>
+
+  <string-array name="array_fps">
+    <item>0 ips</item>
+    <item>15 ips</item>
+    <item>24 ips</item>
+    <item>30 ips</item>
+    <item>45 ips</item>
+    <item>60 ips</item>
+  </string-array>
+
+</resources>

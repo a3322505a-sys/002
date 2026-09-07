@@ -1,0 +1,76 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'org.kalinisa.diatronome'
+    compileSdkVersion 36
+    defaultConfig {
+        applicationId "io.github.a3322505a.tunebeat"
+        minSdk 21
+        targetSdk 36
+        versionCode 1
+        versionName "0.0.1-p0"
+
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+
+        vectorDrawables.useSupportLibrary = true
+    }
+
+    // Create a @string/versionName in generated
+    applicationVariants.configureEach { variant ->
+        variant.resValue "string", "versionName", variant.versionName
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    buildFeatures {
+        viewBinding true
+    }
+
+    // Disable DependencyInfoBlock, signing block added by AGP and
+    // encrypted with the Google public key so it can't be read
+    // by anyone else except Google.
+    dependenciesInfo {
+        // Disables dependency metadata when building APKs.
+        includeInApk = false
+        // Disables dependency metadata when building Android App Bundles.
+        includeInBundle = false
+    }
+    buildToolsVersion '36.1.0'
+
+    // Do not include any version control source (VCS) information, avoiding error
+    // generate_error_reason: NO_SUPPORTED_VCS_FOUND on fdroid lint
+    buildTypes {
+        release {
+            vcsInfo.include false
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.core:core:1.9.0'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+    implementation "androidx.preference:preference-ktx:1.2.1"
+}
+
+// @SuppressWarnings("deprecation")
+allprojects {
+    tasks.withType(JavaCompile).tap {
+        configureEach {
+            options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+        }
+    }
+}
