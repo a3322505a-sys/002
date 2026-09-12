@@ -15,29 +15,26 @@ public class MetronomePlaybackService extends Service {
     private AudioManager audio;
     private AudioFocusRequest focus;
     private boolean receiverRegistered;
-    private final AudioManager.OnAudioFocusChangeListener focusChange=change->{if(change<0){MetronomeCore.getInstance().stop();stopSelf();}};
-    private final BroadcastReceiver noisy=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent i){MetronomeCore.getInstance().stop();stopSelf();}};
-    public static void configure(Context c,MetronomeCore core){
-        if(core.getTempoBpm()>0)return;
-        core.setRefPitch(440);core.setWaveFormAccent("SINE");core.setWaveFormMain("SINE");core.setWaveFormSubdivision("SINE");
-        core.setPitchAccentSkb(5);core.setPitchMainSkb(3);core.setPitchSubdivisionSkb(3);
-        core.setBeatsConfig(new int[]{4,3,3,3});
-        int bpm=60;try{bpm=c.getSharedPreferences("tunebeat",MODE_PRIVATE).getInt("bpm",60);}catch(ClassCastException ignored){}
-        if(bpm<30||bpm>240)bpm=60;core.setTempoBpm(bpm);
-    }
-    @Override public void onCreate(){super.onCreate();audio=(AudioManager)getSystemService(AUDIO_SERVICE);}
-    @Override public IBinder onBind(Intent i){return null;}
-    @Override public int onStartCommand(Intent intent,int flags,int startId){
-        if(intent==null||!PLAY.equals(intent.getAction())){MetronomeCore.getInstance().stop();stopSelf();return START_NOT_STICKY;}
-        MetronomeCore core=MetronomeCore.getInstance();configure(this,core);
-        NotificationManager manager=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-        if(Build.VERSION.SDK_INT>=26)manager.createNotificationChannel(new NotificationChannel(CHANNEL,"节拍器播放",NotificationManager.IMPORTANCE_LOW));
+    private final AudioManager.OnAudioFocusChangeListener focusChange=change->{if(change<0){TuneBeatCore.getInstance().stop();stopSelf();}};
+    private final BroadcastReceiver noisy=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent i){TuneBeatCore.getInstance().stop();stopSelf();}};
+    public static void configure(Context c,TuneBeatCore core){core.configure(c);}
+    private boolean foreground;
+    private Notification notification(){
         int immutable=Build.VERSION.SDK_INT>=23?PendingIntent.FLAG_IMMUTABLE:0;
         PendingIntent open=PendingIntent.getActivity(this,0,new Intent(this,MainActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|immutable);
         PendingIntent stop=PendingIntent.getService(this,1,new Intent(this,MetronomePlaybackService.class).setAction(STOP),PendingIntent.FLAG_UPDATE_CURRENT|immutable);
-        Notification n=new NotificationCompat.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_launcher).setContentTitle("节拍器正在播放")
-            .setContentText("4/4 · 每拍一下").setContentIntent(open).setOngoing(true).setSilent(true).addAction(0,"停止",stop).build();
-        startForeground(1686,n);
+        TuneBeatCore core=TuneBeatCore.getInstance();
+        return new NotificationCompat.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_launcher).setContentTitle("节拍器正在播放")
+            .setContentText(core.getTempoBpm()+" BPM · "+core.getConfig().meter()+" · "+core.getConfig().detail()).setContentIntent(open).setOngoing(true).setSilent(true).addAction(0,"停止",stop).build();
+    }
+    @Override public void onCreate(){super.onCreate();audio=(AudioManager)getSystemService(AUDIO_SERVICE);TuneBeatCore.getInstance().setChangeListener(()->{if(foreground){if(!TuneBeatCore.getInstance().getIsPlaying()){stopSelf();return;}((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).notify(1686,notification());}});}
+    @Override public IBinder onBind(Intent i){return null;}
+    @Override public int onStartCommand(Intent intent,int flags,int startId){
+        if(intent==null||!PLAY.equals(intent.getAction())){TuneBeatCore.getInstance().stop();stopSelf();return START_NOT_STICKY;}
+        TuneBeatCore core=TuneBeatCore.getInstance();configure(this,core);
+        NotificationManager manager=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+        if(Build.VERSION.SDK_INT>=26)manager.createNotificationChannel(new NotificationChannel(CHANNEL,"节拍器播放",NotificationManager.IMPORTANCE_LOW));
+        startForeground(1686,notification());foreground=true;
         if(core.getIsPlaying())return START_NOT_STICKY;
         int granted;
         if(Build.VERSION.SDK_INT>=26){
@@ -51,7 +48,7 @@ public class MetronomePlaybackService extends Service {
         core.play();return START_NOT_STICKY;
     }
     @Override public void onDestroy(){
-        MetronomeCore.getInstance().stop();
+        foreground=false;TuneBeatCore.getInstance().setChangeListener(null);TuneBeatCore.getInstance().stop();
         if(receiverRegistered)unregisterReceiver(noisy);
         if(audio!=null){if(Build.VERSION.SDK_INT>=26&&focus!=null)audio.abandonAudioFocusRequest(focus);else audio.abandonAudioFocus(focusChange);}
         super.onDestroy();

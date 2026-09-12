@@ -7,7 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.kalinisa.diatronome.Cores.MetronomeCore;
+import org.kalinisa.diatronome.Cores.TuneBeatCore;
 import java.io.*;
 import static org.junit.Assert.*;
 @RunWith(AndroidJUnit4.class)
@@ -25,11 +25,11 @@ public class BaselineSmokeTest {
                 a.findViewById(R.id.tempo_minus).performClick();
                 a.findViewById(R.id.play_pause).performClick();
             });
-            Thread.sleep(2500);assertTrue(MetronomeCore.getInstance().getIsPlaying());
+            Thread.sleep(2500);assertTrue(TuneBeatCore.getInstance().getIsPlaying());
             ins.runOnMainSync(()->a.findViewById(R.id.tempo_plus).performClick());
-            Thread.sleep(1300);assertTrue(MetronomeCore.getInstance().getIsPlaying());
+            Thread.sleep(1300);assertTrue(TuneBeatCore.getInstance().getIsPlaying());
             ins.runOnMainSync(()->a.findViewById(R.id.play_pause).performClick());
-            Thread.sleep(300);assertFalse(MetronomeCore.getInstance().getIsPlaying());
+            Thread.sleep(300);assertFalse(TuneBeatCore.getInstance().getIsPlaying());
             Bitmap b=ins.getUiAutomation().takeScreenshot();File dir=new File(ins.getTargetContext().getExternalFilesDir(null),"screens");dir.mkdirs();
             try(FileOutputStream out=new FileOutputStream(new File(dir,"metronome.png"))){b.compress(Bitmap.CompressFormat.PNG,100,out);}
         }finally{ins.runOnMainSync(()->{a.stopMetronome();a.finish();});ins.waitForIdleSync();}

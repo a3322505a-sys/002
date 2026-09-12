@@ -5,14 +5,17 @@ import android.graphics.Paint;
 import android.view.View;
 public final class BeatDots extends View {
     private int beat=-1;
+    private BeatConfig config=BeatConfig.DEFAULT;
     private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
-    public BeatDots(Context c){super(c);setContentDescription("四拍节奏，第一拍重音");}
+    public BeatDots(Context c){super(c);setConfig(config);}
+    public void setConfig(BeatConfig c){config=c;setContentDescription(c.meter()+"，"+c.detail());invalidate();}
     public void setBeat(int n){beat=n;invalidate();}
     @Override protected void onDraw(Canvas c){
-        float space=ToolUi.dp(getContext(),28),cx=getWidth()/2f;
-        for(int i=0;i<4;i++){
+        int count=config.ticks();float space=Math.min(ToolUi.dp(getContext(),28),(getWidth()-ToolUi.dp(getContext(),20))/(float)count),cx=getWidth()/2f;
+        for(int i=0;i<count;i++){
             p.setColor(i==beat?ToolUi.MINT:0xff606771);
-            c.drawCircle(cx+(i-1.5f)*space,getHeight()/2f,ToolUi.dp(getContext(),i==0?6:4.5f),p);
+            float size=config.accent(i)==4?6:config.accent(i)==3?4.5f:2.5f;
+            c.drawCircle(cx+(i-(count-1)/2f)*space,getHeight()/2f,ToolUi.dp(getContext(),size),p);
         }
     }
 }
