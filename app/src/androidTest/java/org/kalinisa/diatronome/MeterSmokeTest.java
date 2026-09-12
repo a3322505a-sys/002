@@ -24,11 +24,20 @@ public class MeterSmokeTest {
    ins.runOnMainSync(()->{c.requestConfig(BeatConfig.of(3,4,2));c.requestConfig(BeatConfig.of(6,8,3));});
    Thread.sleep(1500);assertEquals(BeatConfig.of(6,8,3),c.getConfig());assertTrue(c.getIsPlaying());
    ins.runOnMainSync(()->assertTrue(((TextView)a.findViewById(R.id.meter_config)).getText().toString().contains("6/8")));
-   Bitmap b=ins.getUiAutomation().takeScreenshot();try(FileOutputStream out=new FileOutputStream("/sdcard/Download/tunebeat-meter-v02.png")){b.compress(Bitmap.CompressFormat.PNG,100,out);}
+   try(InputStream in=new android.os.ParcelFileDescriptor.AutoCloseInputStream(ins.getUiAutomation().executeShellCommand("screencap -p /sdcard/Download/tunebeat-meter-v02.png"))){while(in.read()!=-1){}}
    ins.runOnMainSync(()->{c.requestConfig(BeatConfig.of(2,4,3));a.stopMetronome();});Thread.sleep(200);
    assertEquals(BeatConfig.of(2,4,3),c.getConfig());assertFalse(c.getIsPlaying());
    assertEquals(2,ins.getTargetContext().getSharedPreferences("tunebeat",0).getInt("meter_n",0));
   }finally{ins.runOnMainSync(()->{a.stopMetronome();c.setTempoBpm(60);c.requestConfig(BeatConfig.DEFAULT);a.finish();});ins.waitForIdleSync();}
+ }
+ @Test public void pitchDetectorOnAndroid(){
+  GuitarPitchDetector detector=new GuitarPitchDetector();short[] pcm=new short[4096];long started=System.nanoTime();int count=0;
+  for(int string=0;string<6;string++)for(int repeat=0;repeat<3;repeat++){
+   double hz=TuningMath.frequency(string);
+   for(int i=0;i<pcm.length;i++)pcm[i]=(short)(8000*Math.sin(2*Math.PI*hz*i/44100));
+   GuitarPitchDetector.Result result=detector.detect(pcm);assertTrue(result.valid());assertEquals(string,TuningMath.nearestString(result.hz));count++;
+  }
+  android.util.Log.i("TuneBeat-V02","Emulator detector mean_ms="+((System.nanoTime()-started)/1e6/count)+" frames="+count+"; phone performance unmeasured");
  }
  @Test public void headstockTargetsAtNarrowWidth(){
   Instrumentation ins=InstrumentationRegistry.getInstrumentation();

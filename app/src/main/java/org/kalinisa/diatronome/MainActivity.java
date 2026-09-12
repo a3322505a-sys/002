@@ -118,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
         measured=ToolUi.text(this,"实测 —",compact?24:30,ToolUi.TEXT);content.addView(measured,new LinearLayout.LayoutParams(-1,dp(42)));
         automatic=roundButton("自动选弦","自动识别六弦");automatic.setId(R.id.tuner_auto);automatic.setTextSize(14);
         content.addView(automatic,new LinearLayout.LayoutParams(-1,dp(48)));
-        automatic.setOnClickListener(v->{tracker.automatic();tuningUi.removeCallbacks(stalePitch);renderReading(tracker.waiting("拨动琴弦"));});
+        automatic.setOnClickListener(v->{tracker.automatic();tuningUi.removeCallbacks(stalePitch);renderReading(tracker.waiting("拨动琴弦"));restartCapture();});
         LinearLayout instrument=new LinearLayout(this);instrument.setOrientation(LinearLayout.HORIZONTAL);instrument.setGravity(Gravity.CENTER);
         LinearLayout selectors=new LinearLayout(this);selectors.setOrientation(LinearLayout.VERTICAL);selectors.setGravity(Gravity.CENTER);
         int[] ids={R.id.string_1,R.id.string_2,R.id.string_3,R.id.string_4,R.id.string_5,R.id.string_6};
@@ -136,8 +136,9 @@ public class MainActivity extends AppCompatActivity {
     }
     private void selectString(int string){
         selectedString=string;prefs.edit().putInt("string",string).apply();tracker.lock(string);
-        tuningUi.removeCallbacks(stalePitch);renderReading(tracker.waiting("拨动琴弦"));
+        tuningUi.removeCallbacks(stalePitch);renderReading(tracker.waiting("拨动琴弦"));restartCapture();
     }
+    private void restartCapture(){if(resumed&&hasMicrophone()){capture.stop();capture.start();}}
     private void renderReading(TuningTracker.Reading r){
         if(!tunerPage||status==null)return;
         int string=r.string;boolean valid=r.hz>0;

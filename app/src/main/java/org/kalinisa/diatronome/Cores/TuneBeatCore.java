@@ -55,7 +55,7 @@ public final class TuneBeatCore extends BaseCore {
     private void stream(Session s){
         AudioTrack track=null;
         try{
-            Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO);
             int min=AudioTrack.getMinBufferSize(BeatSequence.RATE,AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT);
             if(min<=0)throw new IllegalStateException("No audio output");
             synchronized(s){
