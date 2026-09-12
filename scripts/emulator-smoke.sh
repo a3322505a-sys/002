@@ -8,6 +8,7 @@ adb shell pm path org.kalinisa.diatronome
 adb shell pm path io.github.a3322505a.tunebeat
 gradle --no-daemon :app:connectedDebugAndroidTest
 adb pull /sdcard/Download/tunebeat-tuner.png verification/tuner.png
+adb pull /sdcard/Download/tunebeat-meter-v02.png verification/meter-v02.png
 # Exercise release code with a temporary CI certificate. The delivered APK is
 # signed offline with the persistent private key, which is never sent to CI.
 gradle --no-daemon --console=plain :app:signingReport > verification/signing-report.txt

@@ -16,7 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowCompat;
-import org.kalinisa.diatronome.Cores.MetronomeCore;
+import org.kalinisa.diatronome.Cores.TuneBeatCore;
 import org.kalinisa.diatronome.Cores.MetronomePlaybackService;
 import org.kalinisa.diatronome.Tools.*;
 
@@ -25,17 +25,19 @@ public class MainActivity extends AppCompatActivity {
     protected LinearLayout root;
     protected FrameLayout body;
     protected TextView title;
-    private TextView bpmText;
+    private TextView bpmText,meterText,meterDetail;
     private Button play;
     private DialView dial;
     private BeatDots dots;
-    protected MetronomeCore core;
+    protected TuneBeatCore core;
     private boolean tunerPage, resumed;
     private boolean compact;
     private int selectedString=5;
     private Button tunerTab,metronomeTab,microphone;
     private final Button[] strings=new Button[6];
-    private TextView target,status;
+    private TextView target,status,measured;
+    private Button automatic;
+    private final TuningTracker tracker=new TuningTracker();
     private HeadstockView headstock;
     private DeviationView deviation;
     private TunerCapture capture;
@@ -44,8 +46,12 @@ public class MainActivity extends AppCompatActivity {
 
     private final Handler messages=new Handler(Looper.getMainLooper()){
         @Override public void handleMessage(Message msg){
-            if(msg.what==MetronomeCore.HANDLER_MSG_TICK && dots!=null)dots.setBeat(msg.arg1);
-            if(msg.what==MetronomeCore.HANDLER_MSG_PLAY)updatePlaying();
+            if(msg.what==TuneBeatCore.HANDLER_MSG_TICK && dots!=null && msg.obj instanceof BeatSequence.Event){
+                BeatSequence.Event e=(BeatSequence.Event)msg.obj;dots.setConfig(e.config);dots.setBeat(e.tick);
+            }
+            if(msg.what==TuneBeatCore.HANDLER_MSG_CONFIG)renderMeter();
+            if(msg.what==TuneBeatCore.HANDLER_MSG_ERROR)Toast.makeText(MainActivity.this,"音频暂不可用，请重试",Toast.LENGTH_SHORT).show();
+            if(msg.what==TuneBeatCore.HANDLER_MSG_PLAY)updatePlaying();
         }
     };
     @Override protected void onCreate(Bundle state){
@@ -68,9 +74,10 @@ public class MainActivity extends AppCompatActivity {
     }
     protected void showInitialPage(){
         capture=new TunerCapture(new TunerCapture.Listener(){
-            public void pitch(double hz){
+            public void pitch(GuitarPitchDetector.Result result){
                 if(!tunerPage||!resumed)return;
-                if(hz>0){renderPitch(hz);tuningUi.removeCallbacks(stalePitch);tuningUi.postDelayed(stalePitch,500);}
+                renderReading(tracker.accept(result,android.os.SystemClock.elapsedRealtime()));
+                tuningUi.removeCallbacks(stalePitch);tuningUi.postDelayed(stalePitch,400);
             }
             public void error(){if(tunerPage){renderPitch(0);microphone.setVisibility(View.VISIBLE);microphone.setText("麦克风暂不可用 · 点此重试");}}
         });
@@ -87,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
     private Button tab(String label,int id){Button b=roundButton(label,label);b.setId(id);b.setTextSize(15);return b;}
     private void switchPage(boolean tuner,boolean request){
         tunerPage=tuner;prefs.edit().putBoolean("tunerPage",tuner).apply();
-        capture.stop();tuningUi.removeCallbacksAndMessages(null);
+        capture.stop();tracker.reset();tuningUi.removeCallbacksAndMessages(null);
         tunerTab.setBackground(ToolUi.shape(tuner?ToolUi.PANEL:ToolUi.BG,dp(12),0));tunerTab.setTextColor(tuner?ToolUi.MINT:ToolUi.MUTED);
         metronomeTab.setBackground(ToolUi.shape(!tuner?ToolUi.PANEL:ToolUi.BG,dp(12),0));metronomeTab.setTextColor(!tuner?ToolUi.MINT:ToolUi.MUTED);
         tunerTab.setSelected(tuner);metronomeTab.setSelected(!tuner);
@@ -107,31 +114,47 @@ public class MainActivity extends AppCompatActivity {
         title.setText("调音器");LinearLayout content=page();content.setPadding(dp(22),0,dp(22),dp(8));
         deviation=new DeviationView(this);content.addView(deviation,new LinearLayout.LayoutParams(-1,dp(compact?64:112)));
         status=ToolUi.text(this,"拨动琴弦",15,ToolUi.MUTED);status.setId(R.id.tuner_status);content.addView(status,new LinearLayout.LayoutParams(-1,dp(compact?24:30)));
-        target=ToolUi.text(this,TuningMath.NOTES[selectedString],compact?38:48,ToolUi.TEXT);target.setId(R.id.target_note);content.addView(target,new LinearLayout.LayoutParams(-1,dp(compact?48:68)));
+        target=ToolUi.text(this,"自动识别琴弦",18,ToolUi.TEXT);target.setId(R.id.target_note);content.addView(target,new LinearLayout.LayoutParams(-1,dp(28)));
+        measured=ToolUi.text(this,"实测 —",compact?24:30,ToolUi.TEXT);content.addView(measured,new LinearLayout.LayoutParams(-1,dp(42)));
+        automatic=roundButton("自动选弦","自动识别六弦");automatic.setId(R.id.tuner_auto);automatic.setTextSize(14);
+        content.addView(automatic,new LinearLayout.LayoutParams(-1,dp(48)));
+        automatic.setOnClickListener(v->{tracker.automatic();tuningUi.removeCallbacks(stalePitch);renderReading(tracker.waiting("拨动琴弦"));});
         LinearLayout instrument=new LinearLayout(this);instrument.setOrientation(LinearLayout.HORIZONTAL);instrument.setGravity(Gravity.CENTER);
         LinearLayout selectors=new LinearLayout(this);selectors.setOrientation(LinearLayout.VERTICAL);selectors.setGravity(Gravity.CENTER);
         int[] ids={R.id.string_1,R.id.string_2,R.id.string_3,R.id.string_4,R.id.string_5,R.id.string_6};
         for(int i=0;i<6;i++){
             final int index=i;Button b=roundButton(TuningMath.LETTERS[i]+"\n"+(i+1)+"弦",(i+1)+"弦 "+TuningMath.NOTES[i]);b.setId(ids[i]);b.setTextSize(17);b.setLineSpacing(0,.85f);
-            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(compact?44:50),dp(compact?44:50));lp.topMargin=dp(compact?2:5);lp.bottomMargin=dp(compact?2:5);selectors.addView(b,lp);strings[i]=b;b.setOnClickListener(v->selectString(index));
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(50),dp(50));lp.topMargin=dp(5);lp.bottomMargin=dp(5);selectors.addView(b,lp);strings[i]=b;b.setOnClickListener(v->selectString(index));
         }
         instrument.addView(selectors,new LinearLayout.LayoutParams(dp(60),-1));
         headstock=new HeadstockView(this);headstock.setListener(this::selectString);instrument.addView(headstock,new LinearLayout.LayoutParams(0,-1,1));
-        content.addView(instrument,new LinearLayout.LayoutParams(-1,dp(compact?288:370)));
+        content.addView(instrument,new LinearLayout.LayoutParams(-1,dp(390)));
         microphone=roundButton("开启麦克风，开始调音","开启麦克风，开始调音");microphone.setTextSize(14);microphone.setTextColor(ToolUi.MINT);microphone.setBackground(ToolUi.shape(ToolUi.PANEL,dp(12),0));microphone.setOnClickListener(v->enableMicrophone());
         microphone.setVisibility(hasMicrophone()?View.GONE:View.VISIBLE);content.addView(microphone,0,new LinearLayout.LayoutParams(-1,dp(46)));
         TextView standard=ToolUi.text(this,"标准六弦 · A₄ = 440 Hz",11,ToolUi.MUTED);content.addView(standard,new LinearLayout.LayoutParams(-1,dp(compact?22:30)));
-        selectString(selectedString);
+        tracker.reset();renderReading(tracker.waiting("拨动琴弦"));
     }
     private void selectString(int string){
-        selectedString=string;prefs.edit().putInt("string",string).apply();
-        target.setText(TuningMath.NOTES[string]);target.setContentDescription((string+1)+"弦，目标音 "+TuningMath.NOTES[string]);
-        for(int i=0;i<6;i++){strings[i].setTextColor(i==string?ToolUi.BG:ToolUi.TEXT);strings[i].setBackground(ToolUi.shape(i==string?ToolUi.MINT:ToolUi.PANEL,dp(28),0));strings[i].setSelected(i==string);}
-        headstock.setSelected(string);tuningUi.removeCallbacks(stalePitch);renderPitch(0);
+        selectedString=string;prefs.edit().putInt("string",string).apply();tracker.lock(string);
+        tuningUi.removeCallbacks(stalePitch);renderReading(tracker.waiting("拨动琴弦"));
     }
+    private void renderReading(TuningTracker.Reading r){
+        if(!tunerPage||status==null)return;
+        int string=r.string;boolean valid=r.hz>0;
+        target.setText(string>=0?(r.locked?"锁定 ":"自动 ")+(string+1)+"弦 · 目标 "+TuningMath.NOTES[string]:"自动识别琴弦");
+        measured.setText(valid?String.format(java.util.Locale.ROOT,"实测 %s · %.1f Hz",TuningMath.measuredNote(r.hz),r.hz):"实测 —");
+        automatic.setText(r.locked?"切回自动选弦":"自动选弦 ✓");automatic.setSelected(!r.locked);
+        for(int i=0;i<6;i++){
+            boolean chosen=i==string;strings[i].setTextColor(chosen?ToolUi.MINT:ToolUi.TEXT);
+            strings[i].setBackground(ToolUi.shape(ToolUi.PANEL,dp(28),chosen?ToolUi.MINT:0));strings[i].setSelected(chosen);
+        }
+        headstock.setState(string,r.locked,valid,r.inTune);deviation.setReading(valid?r.cents:Double.NaN,r.inTune);
+        status.setText(r.status);status.setTextColor(r.inTune?ToolUi.MINT:valid?0xffecaa7c:ToolUi.MUTED);
+    }
+    // Package-visible input seam for instrumentation. Production always enters through PCM detection.
     void renderPitch(double hz){
-        if(!tunerPage||status==null)return;double cents=TuningMath.cents(hz,selectedString);deviation.setCents(cents);
-        status.setText(TuningMath.direction(cents));status.setTextColor(Double.isNaN(cents)?ToolUi.MUTED:Math.abs(cents)<=5?ToolUi.MINT:0xffecaa7c);
+        if(hz<=0){tracker.reset();renderReading(tracker.waiting("拨动琴弦"));}
+        else renderReading(tracker.accept(new GuitarPitchDetector.Result(hz,1,.1,false),android.os.SystemClock.elapsedRealtime()));
     }
     @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results){
         super.onRequestPermissionsResult(request,permissions,results);
@@ -147,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
         scroll.addView(content,new ScrollView.LayoutParams(-1,-2));body.addView(scroll,new FrameLayout.LayoutParams(-1,-1));return content;
     }
     protected void ensureCore(){
-        if(core==null){core=MetronomeCore.getInstance();MetronomePlaybackService.configure(this,core);}
+        if(core==null){core=TuneBeatCore.getInstance();MetronomePlaybackService.configure(this,core);}
         core.setHandler(messages);
     }
     protected void showMetronome(){
@@ -168,8 +191,23 @@ public class MainActivity extends AppCompatActivity {
         play=roundButton("▶","开始节拍");play.setId(R.id.play_pause);play.setTextColor(ToolUi.MINT);play.setTextSize(32);play.setBackground(ToolUi.shape(ToolUi.BG,dp(64),0));
         FrameLayout.LayoutParams p=new FrameLayout.LayoutParams(dp(112),dp(112),Gravity.CENTER);disk.addView(play,p);play.setOnClickListener(v->togglePlayback());
         dots=new BeatDots(this);dots.setId(R.id.beat_dots);content.addView(dots,new LinearLayout.LayoutParams(-1,dp(compact?28:42)));
-        TextView meter=ToolUi.text(this,"4/4",22,ToolUi.TEXT);LinearLayout.LayoutParams meterLp=new LinearLayout.LayoutParams(-1,dp(compact?34:50));meterLp.topMargin=dp(compact?6:14);content.addView(meter,meterLp);
-        content.addView(ToolUi.text(this,"第一拍重音 · 每拍一下",12,ToolUi.MUTED));updatePlaying();
+        meterText=ToolUi.text(this,"",22,ToolUi.TEXT);meterText.setId(R.id.meter_config);meterText.setFocusable(true);meterText.setOnClickListener(v->chooseMeter());LinearLayout.LayoutParams meterLp=new LinearLayout.LayoutParams(-1,dp(48));meterLp.topMargin=dp(compact?6:14);content.addView(meterText,meterLp);
+        meterDetail=ToolUi.text(this,"",12,ToolUi.MUTED);content.addView(meterDetail);renderMeter();updatePlaying();
+    }
+    private void renderMeter(){
+        if(core==null||meterText==null)return;
+        BeatConfig current=core.getConfig(),pending=core.getRequestedConfig();
+        meterText.setText(current.meter()+" ▾");
+        meterDetail.setText(current.detail()+(current.equals(pending)?"":"\n下小节生效："+pending.meter()+" · "+pending.detail()));
+        if(dots!=null)dots.setConfig(current);
+    }
+    private void chooseMeter(){
+        BeatConfig requested=core.getRequestedConfig();String[] labels={"2/4","3/4","4/4","6/8"};
+        new AlertDialog.Builder(this).setTitle("拍号").setSingleChoiceItems(labels,requested.denominator==8?3:requested.numerator-2,(dialog,which)->{
+            dialog.dismiss();if(which==3){core.requestConfig(BeatConfig.of(6,8,3));return;}
+            int n=which+2;String[] subdivisions={"每拍 1 下","每拍 2 下","每拍 3 连音","每拍 4 下"};
+            new AlertDialog.Builder(this).setTitle(labels[which]+" · 四分音符为一拍").setSingleChoiceItems(subdivisions,requested.denominator==4?requested.subdivision-1:0,(d,i)->{core.requestConfig(BeatConfig.of(n,4,i+1));d.dismiss();}).setNegativeButton("取消",null).show();
+        }).setNegativeButton("取消",null).show();
     }
     protected Button roundButton(String text,String description){
         Button b=new Button(this);b.setText(text);b.setTextSize(26);b.setTextColor(ToolUi.TEXT);b.setAllCaps(false);b.setPadding(0,0,0,0);b.setMinWidth(0);b.setMinimumWidth(0);b.setMinHeight(0);b.setMinimumHeight(0);
@@ -198,7 +236,7 @@ public class MainActivity extends AppCompatActivity {
         if(core!=null)core.stop();stopService(new Intent(this,MetronomePlaybackService.class));updatePlaying();
     }
     private void updatePlaying(){
-        if(play==null||core==null)return;boolean active=core.getIsPlaying();play.setText(active?"Ⅱ":"▶");play.setContentDescription(active?"暂停节拍":"开始节拍");if(!active&&dots!=null)dots.setBeat(-1);
+        if(play==null||core==null)return;renderMeter();boolean active=core.getIsPlaying();play.setText(active?"Ⅱ":"▶");play.setContentDescription(active?"暂停节拍":"开始节拍");if(!active&&dots!=null)dots.setBeat(-1);
     }
     @Override protected void onResume(){super.onResume();resumed=true;if(core!=null)core.setHandler(messages);updatePlaying();if(tunerPage&&capture!=null){renderPitch(0);microphone.setVisibility(hasMicrophone()?View.GONE:View.VISIBLE);if(hasMicrophone())capture.start();}}
     @Override protected void onPause(){resumed=false;if(capture!=null)capture.stop();tuningUi.removeCallbacksAndMessages(null);if(tunerPage)renderPitch(0);super.onPause();}
