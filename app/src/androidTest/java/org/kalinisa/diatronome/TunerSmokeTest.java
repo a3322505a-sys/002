@@ -30,7 +30,7 @@ public class TunerSmokeTest {
                 ins.runOnMainSync(()->{
                     a.findViewById(ids[string]).performClick();
                     assertTrue(((TextView)a.findViewById(R.id.target_note)).getText().toString().contains(TuningMath.NOTES[string]));
-                    for(int n=0;n<6;n++)a.renderPitch(TuningMath.frequency(string)*Math.pow(2,20/1200.0));assertEquals("偏高 · 调低",((TextView)a.findViewById(R.id.tuner_status)).getText().toString());
+                    for(int n=0;n<6;n++)a.renderPitch(TuningMath.frequency(string)*Math.pow(2,20/1200.0));assertTrue(((TextView)a.findViewById(R.id.tuner_status)).getText().toString().startsWith("偏高 · 调低"));
                     a.renderPitch(0);assertEquals("拨动琴弦",((TextView)a.findViewById(R.id.tuner_status)).getText().toString());
                 });
             }
@@ -39,7 +39,12 @@ public class TunerSmokeTest {
                 ins.runOnMainSync(()->a.findViewById(R.id.tab_metronome).performClick());
                 ins.runOnMainSync(()->a.findViewById(R.id.tab_tuner).performClick());Thread.sleep(120);
             }
-            Thread.sleep(800);shell(ins,"screencap -p /sdcard/Download/tunebeat-tuner.png");
+            Thread.sleep(800);
+            ins.runOnMainSync(()->{
+                android.graphics.Rect bounds=new android.graphics.Rect();android.view.View sixth=a.findViewById(R.id.string_6);
+                assertTrue(sixth.getGlobalVisibleRect(bounds));assertEquals(sixth.getHeight(),bounds.height());
+            });
+            shell(ins,"screencap -p /sdcard/Download/tunebeat-tuner.png");
             // Returning to the metronome page must not revive playback.
             ins.runOnMainSync(()->a.findViewById(R.id.tab_metronome).performClick());
             assertFalse(TuneBeatCore.getInstance().getIsPlaying());

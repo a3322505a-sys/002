@@ -43,7 +43,7 @@ public class MeterSmokeTest {
   Instrumentation ins=InstrumentationRegistry.getInstrumentation();
   ins.runOnMainSync(()->{
    HeadstockView v=new HeadstockView(ins.getTargetContext());float density=ins.getTargetContext().getResources().getDisplayMetrics().density;
-   int w=(int)(232*density),h=(int)(390*density);v.layout(0,0,w,h);
+   int w=(int)(232*density),h=(int)(370*density);v.layout(0,0,w,h);
    float scale=Math.min(w/320f,h/640f),dx=(w-320*scale)/2;
    float[] x={207,192,177,162,147,132},y={62,146,230,314,398,482};
    for(int i=0;i<6;i++){float cx=dx+(x[i]-16)*scale,cy=y[i]*scale;assertEquals(i,v.hit(cx,cy));assertEquals(i,v.hit(cx-23*density,cy-23*density));assertEquals(i,v.hit(cx+23*density,cy+23*density));}

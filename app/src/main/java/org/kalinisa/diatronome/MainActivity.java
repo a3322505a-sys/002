@@ -112,12 +112,27 @@ public class MainActivity extends AppCompatActivity {
     }
     private void showTuner(){
         title.setText("调音器");LinearLayout content=page();content.setPadding(dp(22),0,dp(22),dp(8));
-        deviation=new DeviationView(this);content.addView(deviation,new LinearLayout.LayoutParams(-1,dp(compact?64:112)));
-        status=ToolUi.text(this,"拨动琴弦",15,ToolUi.MUTED);status.setId(R.id.tuner_status);content.addView(status,new LinearLayout.LayoutParams(-1,dp(compact?24:30)));
-        target=ToolUi.text(this,"自动识别琴弦",18,ToolUi.TEXT);target.setId(R.id.target_note);content.addView(target,new LinearLayout.LayoutParams(-1,dp(28)));
-        measured=ToolUi.text(this,"实测 —",compact?24:30,ToolUi.TEXT);content.addView(measured,new LinearLayout.LayoutParams(-1,dp(42)));
-        automatic=roundButton("自动选弦","自动识别六弦");automatic.setId(R.id.tuner_auto);automatic.setTextSize(14);
-        content.addView(automatic,new LinearLayout.LayoutParams(-1,dp(48)));
+        deviation=new DeviationView(this);
+        status=ToolUi.text(this,"拨动琴弦",14,ToolUi.MUTED);status.setId(R.id.tuner_status);
+        target=ToolUi.text(this,"自动识别琴弦",compact?13:18,ToolUi.TEXT);target.setId(R.id.target_note);
+        measured=ToolUi.text(this,"实测 —",compact?16:30,ToolUi.TEXT);
+        automatic=roundButton("自动选弦","自动识别六弦");automatic.setId(R.id.tuner_auto);automatic.setTextSize(13);
+        if(compact){
+            LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);
+            LinearLayout readout=new LinearLayout(this);readout.setOrientation(LinearLayout.VERTICAL);
+            readout.addView(target,new LinearLayout.LayoutParams(-1,dp(22)));readout.addView(measured,new LinearLayout.LayoutParams(-1,dp(26)));
+            top.addView(readout,new LinearLayout.LayoutParams(0,dp(48),1));
+            top.addView(deviation,new LinearLayout.LayoutParams(dp(56),dp(48)));
+            top.addView(automatic,new LinearLayout.LayoutParams(dp(76),dp(48)));
+            content.addView(top,new LinearLayout.LayoutParams(-1,dp(48)));
+            content.addView(status,new LinearLayout.LayoutParams(-1,dp(24)));
+        }else{
+            content.addView(deviation,new LinearLayout.LayoutParams(-1,dp(112)));
+            content.addView(status,new LinearLayout.LayoutParams(-1,dp(30)));
+            content.addView(target,new LinearLayout.LayoutParams(-1,dp(28)));
+            content.addView(measured,new LinearLayout.LayoutParams(-1,dp(42)));
+            content.addView(automatic,new LinearLayout.LayoutParams(-1,dp(48)));
+        }
         automatic.setOnClickListener(v->{tracker.automatic();tuningUi.removeCallbacks(stalePitch);renderReading(tracker.waiting("拨动琴弦"));restartCapture();});
         LinearLayout instrument=new LinearLayout(this);instrument.setOrientation(LinearLayout.HORIZONTAL);instrument.setGravity(Gravity.CENTER);
         LinearLayout selectors=new LinearLayout(this);selectors.setOrientation(LinearLayout.VERTICAL);selectors.setGravity(Gravity.CENTER);
@@ -128,10 +143,10 @@ public class MainActivity extends AppCompatActivity {
         }
         instrument.addView(selectors,new LinearLayout.LayoutParams(dp(60),-1));
         headstock=new HeadstockView(this);headstock.setListener(this::selectString);instrument.addView(headstock,new LinearLayout.LayoutParams(0,-1,1));
-        content.addView(instrument,new LinearLayout.LayoutParams(-1,dp(390)));
+        content.addView(instrument,new LinearLayout.LayoutParams(-1,dp(compact?370:390)));
         microphone=roundButton("开启麦克风，开始调音","开启麦克风，开始调音");microphone.setTextSize(14);microphone.setTextColor(ToolUi.MINT);microphone.setBackground(ToolUi.shape(ToolUi.PANEL,dp(12),0));microphone.setOnClickListener(v->enableMicrophone());
         microphone.setVisibility(hasMicrophone()?View.GONE:View.VISIBLE);content.addView(microphone,0,new LinearLayout.LayoutParams(-1,dp(46)));
-        TextView standard=ToolUi.text(this,"标准六弦 · A₄ = 440 Hz",11,ToolUi.MUTED);content.addView(standard,new LinearLayout.LayoutParams(-1,dp(compact?22:30)));
+        if(!compact){TextView standard=ToolUi.text(this,"标准六弦 · A₄ = 440 Hz",11,ToolUi.MUTED);content.addView(standard,new LinearLayout.LayoutParams(-1,dp(30)));}
         tracker.reset();renderReading(tracker.waiting("拨动琴弦"));
     }
     private void selectString(int string){
@@ -144,13 +159,13 @@ public class MainActivity extends AppCompatActivity {
         int string=r.string;boolean valid=r.hz>0;
         target.setText(string>=0?(r.locked?"锁定 ":"自动 ")+(string+1)+"弦 · 目标 "+TuningMath.NOTES[string]:"自动识别琴弦");
         measured.setText(valid?String.format(java.util.Locale.ROOT,"实测 %s · %.1f Hz",TuningMath.measuredNote(r.hz),r.hz):"实测 —");
-        automatic.setText(r.locked?"切回自动选弦":"自动选弦 ✓");automatic.setSelected(!r.locked);
+        automatic.setText(compact?(r.locked?"自动":"自动 ✓"):(r.locked?"切回自动选弦":"自动选弦 ✓"));automatic.setSelected(!r.locked);
         for(int i=0;i<6;i++){
             boolean chosen=i==string;strings[i].setTextColor(chosen?ToolUi.MINT:ToolUi.TEXT);
             strings[i].setBackground(ToolUi.shape(ToolUi.PANEL,dp(28),chosen?ToolUi.MINT:0));strings[i].setSelected(chosen);
         }
         headstock.setState(string,r.locked,valid,r.inTune);deviation.setReading(valid?r.cents:Double.NaN,r.inTune);
-        status.setText(r.status);status.setTextColor(r.inTune?ToolUi.MINT:valid?0xffecaa7c:ToolUi.MUTED);
+        status.setText(r.status+(compact&&valid?String.format(java.util.Locale.ROOT,"  %+.0f 音分",r.cents):""));status.setTextColor(r.inTune?ToolUi.MINT:valid?0xffecaa7c:ToolUi.MUTED);
     }
     // Package-visible input seam for instrumentation. Production always enters through PCM detection.
     void renderPitch(double hz){
@@ -198,6 +213,7 @@ public class MainActivity extends AppCompatActivity {
     private void renderMeter(){
         if(core==null||meterText==null)return;
         BeatConfig current=core.getConfig(),pending=core.getRequestedConfig();
+        if(bpmText!=null)bpmText.setText(""+core.getTempoBpm());if(dial!=null)dial.setTempo(core.getTempoBpm());
         meterText.setText(current.meter()+" ▾");
         meterDetail.setText(current.detail()+(current.equals(pending)?"":"\n下小节生效："+pending.meter()+" · "+pending.detail()));
         if(dots!=null)dots.setConfig(current);

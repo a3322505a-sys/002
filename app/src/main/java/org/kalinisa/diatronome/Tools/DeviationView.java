@@ -11,6 +11,12 @@ public final class DeviationView extends View {
     public void setReading(double value,boolean tuned){cents=value;inTune=tuned;invalidate();}
     @Override protected void onDraw(Canvas c){
         float w=getWidth(),h=getHeight(),cx=w/2;
+        if(w<ToolUi.dp(getContext(),100)){
+            p.setColor(0xff606771);p.setStrokeWidth(1);c.drawLine(4,h/2,w-4,h/2,p);c.drawLine(cx,h*.25f,cx,h*.75f,p);
+            if(!Double.isNaN(cents)){float x=cx+(float)Math.max(-50,Math.min(50,cents))*(w-12)/100;
+                p.setColor(inTune?ToolUi.MINT:0xffecaa7c);c.drawCircle(x,h/2,ToolUi.dp(getContext(),3),p);}
+            return;
+        }
         p.setStrokeWidth(1);p.setColor(0xff2a2e32);
         for(int i=0;i<=20;i++){float x=w*i/20;c.drawLine(x,h*.3f,x,h*.92f,p);}
         for(int i=0;i<4;i++)c.drawLine(0,h*(.36f+i*.17f),w,h*(.36f+i*.17f),p);
