@@ -38,6 +38,8 @@ public class PitchComparison {
       String[] tokens=raw.trim().split("[\\s,]+");float[] samples=new float[tokens.length];float max=0;
       for(int i=0;i<samples.length;i++){samples[i]=Float.parseFloat(tokens[i]);max=Math.max(max,Math.abs(samples[i]));}
       if(max>1)for(int i=0;i<samples.length;i++)samples[i]/=32768f;
+      // Upstream E2 excerpt is 4095 samples: append one zero (0.023ms), never repeat the clip.
+      if(samples.length==N-1){samples=Arrays.copyOf(samples,N);System.out.println("# real E2: 4095 original samples + 1 zero; one-frame detector check only");}
       for(int e=0;e<3;e++){
         ArrayList<Double> errors=new ArrayList<>();int invalid=0,octaves=0,total=0;long ns=0;
         for(int start=0;start+N<=samples.length;start+=2048){

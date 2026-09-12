@@ -3,7 +3,7 @@
 - 基线：a3322505a-sys/002，9e107f3203343e1f14e28e7de7fcb9b3e5a1f5ad。当前 TuneBeat 页面接入独立的采样时钟播放核心；原 Diatronome 页面源码保留原许可证与兼容接口。
 - TarsosDSP：JorenSix/TarsosDSP，41476b268b8b34664d3e43997fb05c95cec29e3d，GPL-3.0。直接使用 McLeodPitchMethod、PitchDetector、PitchDetectionResult，保留头部署名。唯一算法源码改动是把 80 Hz 下限降至 40 Hz，使明显偏低的 E2 也能被测量，不进行目标音八度折算。YIN 仅在 scripts/reference 对照，不进入 App。完整许可见 scripts/reference/TarsosDSP-LICENSE。
 - thetwom/Tuner：0b946a227f62f7cbf72c0e8fdd444bb6e88de2ac，阅读 TargetNoteAutoDetection.kt、OutlierRemovingSmoother.kt；借鉴连续证据、目标滞回、异常数据重置机制，未复制 Kotlin 实现。TuneBeat 的短帧状态机独立编写。
-- sevagh/pitch-detection：8055f50bd94ffcc9fec4b63ca9a6a087eec9d892，MIT。E2_44100_acousticguitar.txt 是真实声学吉他录音的时域样本；LFS 内容 SHA256 为 900bc85d2cdff64cdac9d5837d03521b0eb3c0f5e019c9ac9ea368d78a54acd6。CI 按提交下载并校验。来源的 E2 名称仅代表标称音高，不能把相对 82.4069 Hz 的偏移全部认定为算法误差，更不能替代用户电吉他和手机采集链路。
+- sevagh/pitch-detection：8055f50bd94ffcc9fec4b63ca9a6a087eec9d892，MIT。E2_44100_acousticguitar.txt 是真实声学吉他录音的时域样本；LFS 内容 SHA256 为 900bc85d2cdff64cdac9d5837d03521b0eb3c0f5e019c9ac9ea368d78a54acd6。CI 按提交下载并校验。该片段只有 4095 样本（92.86ms），检测对照明确在末尾补一个零样本（0.023ms）；没有循环扩充，不能验证连续稳定、起音响应或持续丢音率。首次回放因脚本误以为至少有一整窗而主动失败，已修正测试范围为单窗检测，未伪造完整链路通过。来源的 E2 名称仅代表标称音高，不能把相对 82.4069 Hz 的偏移全部认定为算法误差，更不能替代用户电吉他和手机采集链路。
 - 琴头首版参考：[Fender American Vintage II 1961 Stratocaster 正面](https://www.thomann.de/be/fender_av_ii_61_strat_rw_owt.htm)，[对应正面图](https://thumbs.static-thomann.de/thumb/padthumb600x600/pics/bdb/_54/548688/20948491_800.jpg)。采用 pre-CBS 小琴头轮廓、单侧六弦钮、第一/第二弦压弦器、木色与金属质感。Android Path 与点击命中共用坐标；未嵌入商品照片。并非用户 Classic Vibe 60s 实琴的精确扫描；有对应照片后才能做精确匹配验收。
 
 ## 同输入对照
