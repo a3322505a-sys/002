@@ -3,7 +3,6 @@
   <string name="common_yes">Ano</string>
   <string name="common_no">Ne</string>
   <string name="action_settings">Nastavení</string>
-  <string name="action_tuner">Ladička</string>
   <string name="action_playnote">Syntetizér</string>
   <string name="action_metronome">Metronom</string>
   <string name="action_about">O aplikaci</string>
@@ -21,12 +20,11 @@
   <string name="preference_system_color">Akcent aplikace</string>
   <string name="preference_system_homescreen">Domovská obrazovka</string>
 
-  <string name="preference_tuner_title">Nastavení aplikace</string>
-  <string name="preference_tuner_pitch">Kalibrace výšky tónu pro A4</string>
-  <string name="preference_tuner_notename">Názvy not</string>
-  <string name="preference_tuner_usesharpflat">♯ místo ♭</string>
-  <string name="preference_tuner_transposition">Změna tóniny</string>
-  <string name="preference_tuner_temperament">Ladění stupnice</string>
+  <string name="preference_note_pitch">Kalibrace výšky tónu pro A4</string>
+  <string name="preference_note_notename">Názvy not</string>
+  <string name="preference_note_usesharpflat">♯ místo ♭</string>
+  <string name="preference_note_transposition">Změna tóniny</string>
+  <string name="preference_note_temperament">Ladění stupnice</string>
 
   <string name="preference_synthesizer_title">Nastavení aplikace</string>
   <string name="preference_synthesizer_waveform">Tvar vlny klavíru</string>
@@ -42,18 +40,9 @@
   <string name="preference_metronome_bidirectionalneedle">Obousměrná ručička metronomu</string>
 
   <string name="preference_advanced_title">Rozšířené</string>
-  <string name="preference_advanced_sensitivity">Citlivost mikrofonu</string>
-  <string name="preference_advanced_algorithm">Algoritmus</string>
   <string name="preference_advanced_fps">Snímků za sekundu</string>
 
   <!-- about -->
-  <string name="about_content"><![CDATA[
-    <b><i>Diatronome</i></b> nabízí <i>tuner</i>, <i>metronome</i> a <i>syntetizér</i>.
-    Tato aplikace je open source, respektuje soukromí a je bez reklam.<br/>
-    <b>Licence: </b>%1$s<br/>
-    <b>Zdrojový kód: </b><a href="%2$s">%2$s</a><br/>
-    <b>Podpora: </b><a href="%3$s">%3$s</a><br/>
-  ]]></string>
 
   <!-- string array -->
   <string-array name="array_notes_name">
@@ -68,7 +57,6 @@
   </string-array>
 
   <string-array name="array_homescreen">
-    <item>Ladička</item>
     <item>Metronom</item>
     <item>Syntetizér</item>
   </string-array>

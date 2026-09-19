@@ -1,4 +1,4 @@
-"""Release APK UI check: deny microphone, then still operate metronome."""
+"""Release APK UI check: no microphone permission, metronome remains usable."""
 import subprocess, time, re, xml.etree.ElementTree as ET
 
 def adb(*args):
@@ -14,10 +14,9 @@ def tap(suffix):
                 adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2));return
         time.sleep(.3)
     raise AssertionError('Missing control: '+suffix)
-tap('id/tab_tuner')
-tap('id/permission_deny_button')
-assert any(n.attrib.get('text')=='开启麦克风，开始调音' for n in dump().iter('node'))
-tap('id/tab_metronome')
+package=adb('shell','dumpsys','package','io.github.a3322505a.tunebeat')
+assert 'android.permission.RECORD_AUDIO' not in package
+assert not any(n.attrib.get('text') in ('调音','调音器') for n in dump().iter('node'))
 tap('id/play_pause')
 # Notification permission, if shown, is independent of microphone permission.
 tree=dump()
@@ -26,4 +25,4 @@ if any(n.attrib.get('resource-id','').endswith('id/permission_allow_button') for
 assert any(n.attrib.get('content-desc')=='暂停节拍' for n in dump().iter('node'))
 tap('id/play_pause')
 assert any(n.attrib.get('content-desc')=='开始节拍' for n in dump().iter('node'))
-print('PASS: microphone denial leaves metronome usable')
+print('PASS: no microphone permission; metronome playback works')

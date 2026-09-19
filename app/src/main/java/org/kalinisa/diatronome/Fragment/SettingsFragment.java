@@ -205,7 +205,7 @@ public class SettingsFragment
     //noinspection SwitchStatementWithTooFewBranches
     switch (key)
     {
-      case SettingsCore.SETTING_TUNER_PITCH_REF:
+      case SettingsCore.SETTING_NOTE_PITCH_REF:
         unit = "Hz";
         break;
 

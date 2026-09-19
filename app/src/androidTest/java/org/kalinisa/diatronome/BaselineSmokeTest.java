@@ -14,11 +14,12 @@ import static org.junit.Assert.*;
 public class BaselineSmokeTest {
     @Test public void metronomeControlsAndPlayback() throws Exception {
         Instrumentation ins=InstrumentationRegistry.getInstrumentation();
-        ins.getTargetContext().getSharedPreferences("tunebeat",0).edit().clear().putInt("bpm",999).commit();
+        ins.getTargetContext().getSharedPreferences("tunebeat",0).edit().clear().putInt("bpm",999).putBoolean("tunerPage",true).putInt("string",5).putBoolean("microphoneAsked",true).commit();
         Intent intent=new Intent(ins.getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         MainActivity a=(MainActivity)ins.startActivitySync(intent);ins.waitForIdleSync();
         try{
             ins.runOnMainSync(()->{
+                assertFalse(a.getSharedPreferences("tunebeat",0).contains("tunerPage"));
                 assertEquals("60",((TextView)a.findViewById(R.id.tempo_value)).getText().toString());
                 a.findViewById(R.id.tempo_plus).performClick();
                 assertEquals("61",((TextView)a.findViewById(R.id.tempo_value)).getText().toString());

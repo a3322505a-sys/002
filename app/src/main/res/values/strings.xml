@@ -1,17 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-  <string name="app_name" translatable="false">调音节拍</string>
+  <string name="app_name" translatable="false">节拍器</string>
   <string name="common_yes">Yes</string>
   <string name="common_no">No</string>
   <string name="action_settings">Settings</string>
-  <string name="action_tuner">Tuner</string>
   <string name="action_playnote">Synthesiser</string>
   <string name="action_metronome">Metronome</string>
   <string name="action_about">About</string>
 
   <!-- &#x266D; == b &#x266F; == # -->
-  <string name="tuner_note_sample" translatable="false">Sol&#x266F;<small><small>4</small></small></string>
-  <string name="tuner_measure_sample" translatable="false"><![CDATA[+15c\n19 999 Hz\n0.5 %]]></string>
 
   <string name="metronome_bpm">BPM</string>
   <string name="metronome_timesignature">Time signature</string>
@@ -27,12 +24,11 @@
   <string name="preference_system_color">Application color</string>
   <string name="preference_system_homescreen">Home screen</string>
 
-  <string name="preference_tuner_title">Tuner</string>
-  <string name="preference_tuner_pitch">Pitch calibration for A4</string>
-  <string name="preference_tuner_notename">Notes name</string>
-  <string name="preference_tuner_usesharpflat">♯ instead of ♭</string>
-  <string name="preference_tuner_transposition">Transposition</string>
-  <string name="preference_tuner_temperament">Temperament</string>
+  <string name="preference_note_pitch">Pitch calibration for A4</string>
+  <string name="preference_note_notename">Notes name</string>
+  <string name="preference_note_usesharpflat">♯ instead of ♭</string>
+  <string name="preference_note_transposition">Transposition</string>
+  <string name="preference_note_temperament">Temperament</string>
 
   <string name="preference_synthesizer_title">Synthesizer</string>
   <string name="preference_synthesizer_waveform">Piano tone</string>
@@ -48,14 +44,11 @@
   <string name="preference_metronome_bidirectionalneedle">Metronome Bidirectional needle</string>
 
   <string name="preference_advanced_title">Advanced</string>
-  <string name="preference_advanced_sensitivity">Microphone sensitivity</string>
-  <string name="preference_advanced_algorithm">Algorithm</string>
   <string name="preference_advanced_fps">Frame per second</string>
 
   <!-- about -->
   <string name="about_content"><![CDATA[
-    <b><i>Diatronome</i></b> offer you a <i>tuner</i>, a <i>Visual metronome</i> and a <i>Synthesizer</i>.
-    This application is open source, privacy friendly and advertisement free.<br/>
+    TuneBeat metronome. Based on Diatronome.
     <b>License: </b>%1$s<br/>
     <b>Sources: </b><a href="%2$s">%2$s</a><br/>
     <b>Support: </b><a href="%3$s">%3$s</a><br/>
@@ -106,12 +99,10 @@
   </string-array>
 
   <string-array name="array_homescreen">
-    <item>Tuner</item>
     <item>Metronome</item>
     <item>Player</item>
   </string-array>
   <string-array name="array_homescreen_data" translatable="false">
-    <item>HOME_SCREEN_TUNER</item>
     <item>HOME_SCREEN_METRONOME</item>
     <item>HOME_SCREEN_PLAYNOTE</item>
   </string-array>
@@ -145,18 +136,6 @@
     <item>-1</item>
   </string-array>
 
-  <string-array name="array_algorithm">
-    <item>Envelop Pitch detection</item>
-    <item>Yin</item>
-    <item>FFT - Spectral</item>
-    <!-- <item>Peak detector</item> -->
-  </string-array>
-  <string-array name="array_algorithm_data"  translatable="false">
-    <item>1</item>
-    <item>2</item>
-    <item>3</item>
-    <!-- <item>4</item> -->
-  </string-array>
 
   <!-- EDO = Equals Division Octave = TET = Tone Equal Temperament -->
   <string-array name="array_temperament">
@@ -242,4 +221,5 @@
     <item>45</item>
     <item>60</item>
   </string-array>
+  <string name="preference_note_title">Note playback</string>
 </resources>

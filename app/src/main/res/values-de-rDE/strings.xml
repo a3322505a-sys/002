@@ -1,16 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="about_content"><![CDATA[
-    <b><i>Diatronome</i></b> bietet Ihnen ein <i>Stimmgerät</i>, ein <i>visuelles Metronom</i> und einen <i>Synthesizer</i>.
-    Diese Anwendung ist Open Source, datenschutzfreundlich und werbefrei.<br/>
-    <b>Lizenz: </b>%1$s<br/>
-    <b>Quellcode: </b><a href="%2$s">%2$s</a><br/>
-    <b>Unterstützung: </b><a href="%3$s">%3$s</a><br/>
-  ]]></string>
   <string name="common_yes">Ja</string>
   <string name="common_no">Nein</string>
   <string name="action_settings">Einstellungen</string>
-  <string name="action_tuner">Stimmgerät</string>
   <string name="action_playnote">Synthesizer</string>
   <string name="action_metronome">Metronom</string>
   <string name="action_about">Information</string>
@@ -27,12 +19,11 @@
   <string name="preference_system_color">Anwendungsfarbe</string>
   <string name="preference_system_homescreen">Startbildschirm</string>
 
-  <string name="preference_tuner_title">Stimmgerät</string>
-  <string name="preference_tuner_pitch">Tonhöhenkalibrierung für A4</string>
-  <string name="preference_tuner_notename">Notensystem</string>
-  <string name="preference_tuner_usesharpflat">♯ statt ♭</string>
-  <string name="preference_tuner_transposition">Umsetzung</string>
-  <string name="preference_tuner_temperament">Temperament</string>
+  <string name="preference_note_pitch">Tonhöhenkalibrierung für A4</string>
+  <string name="preference_note_notename">Notensystem</string>
+  <string name="preference_note_usesharpflat">♯ statt ♭</string>
+  <string name="preference_note_transposition">Umsetzung</string>
+  <string name="preference_note_temperament">Temperament</string>
 
   <string name="preference_synthesizer_title">Synthesizer</string>
   <string name="preference_synthesizer_waveform">Kalvierklang</string>
@@ -48,8 +39,6 @@
   <string name="preference_metronome_bidirectionalneedle">Bidirektionale Nadel</string>
 
   <string name="preference_advanced_title">Erweiterte Einstellungen</string>
-  <string name="preference_advanced_sensitivity">Mikrofon Empfindlichkeit</string>
-  <string name="preference_advanced_algorithm">Algorithmus</string>
   <string name="preference_advanced_fps">Bilder pro Sekunde</string>
 
   <string-array name="array_notes_name">
@@ -84,7 +73,6 @@
   </string-array>
 
   <string-array name="array_homescreen">
-    <item>Stimmgerät</item>
     <item>Metronom</item>
     <item>Klavier</item>
   </string-array>

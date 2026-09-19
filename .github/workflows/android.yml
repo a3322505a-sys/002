@@ -24,12 +24,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.12'
-      - name: Pinned real acoustic E2 and V0.2 core regression
-        run: |
-          mkdir -p verification
-          curl --fail --location --retry 3 https://media.githubusercontent.com/media/sevagh/pitch-detection/8055f50bd94ffcc9fec4b63ca9a6a087eec9d892/misc/samples/E2_44100_acousticguitar.txt -o verification/real-E2.txt
-          echo '900bc85d2cdff64cdac9d5837d03521b0eb3c0f5e019c9ac9ea368d78a54acd6  verification/real-E2.txt' | sha256sum --check
-          bash scripts/run-v02-probe.sh verification/real-E2.txt
+      - name: Metronome core regression
+        run: bash scripts/run-v02-probe.sh
       - name: Build and existing unit tests
         run: gradle --no-daemon :app:assembleRelease :app:assembleDebug :app:testDebugUnitTest :app:assembleDebugAndroidTest
       - name: Prepare APK and verification data

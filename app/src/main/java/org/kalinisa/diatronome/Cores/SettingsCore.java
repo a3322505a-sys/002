@@ -13,11 +13,11 @@ public class SettingsCore extends BaseCore
   public static final String SETTING_COLOR = "setting_color";
   public static final String SETTING_HOME_SCREEN = "setting_home_screen";
 
-  public static final String SETTING_TUNER_NOTENAME = "setting_note_name";
-  public static final String SETTING_TUNER_USE_SHARP_FLAT = "setting_use_sharp_flat";
-  public static final String SETTING_TUNER_PITCH_REF = "setting_pitch_ref";
-  public static final String SETTING_TUNER_TRANSPOSITION = "setting_transposition";
-  public static final String SETTING_TUNER_TEMPERAMENT = "setting_temperament";
+  public static final String SETTING_NOTE_NOTENAME = "setting_note_name";
+  public static final String SETTING_NOTE_USE_SHARP_FLAT = "setting_use_sharp_flat";
+  public static final String SETTING_NOTE_PITCH_REF = "setting_pitch_ref";
+  public static final String SETTING_NOTE_TRANSPOSITION = "setting_transposition";
+  public static final String SETTING_NOTE_TEMPERAMENT = "setting_temperament";
 
   public static final String SETTING_PIANO_WAVEFORM = "setting_waveform";
   public static final String SETTING_PIANOTOUCH = "setting_pianotouch";
@@ -33,8 +33,6 @@ public class SettingsCore extends BaseCore
   public static final String SETTING_METRONOME_BPM = "setting_metronome_bpm";
   public static final String SETTING_METRONOME_BEATSIG = "setting_metronome_beatsig";
 
-  public static final String SETTING_SOUNDANALYZE_THRESHOLD = "setting_soundanalyze_threshold";
-  public static final String SETTING_SOUNDANALYZE_ALGORITHM = "setting_soundanalyze_algorithm";
   public static final String SETTING_ADVANCED_FPS = "setting_advanced_fps";
 
   public static final String SETTING_VERSION = "setting_version";
@@ -84,29 +82,29 @@ public class SettingsCore extends BaseCore
           UiCore.getInstance().setHomeScreen(strValue);
           break;
 
-        case SettingsCore.SETTING_TUNER_NOTENAME:
+        case SettingsCore.SETTING_NOTE_NOTENAME:
           strValue = sharedPreferences.getString(key, "");
           UiCore.getInstance().setNoteName(Integer.parseInt(strValue));
           break;
 
-        case SettingsCore.SETTING_TUNER_USE_SHARP_FLAT:
+        case SettingsCore.SETTING_NOTE_USE_SHARP_FLAT:
           boolValue = sharedPreferences.getBoolean(key, false);
           UiCore.getInstance().setUseFlatSharp(boolValue);
           PlayNoteCore.getInstance().setUseFlatSharp(boolValue);
           break;
 
-        case SettingsCore.SETTING_TUNER_PITCH_REF:
+        case SettingsCore.SETTING_NOTE_PITCH_REF:
           intValue = sharedPreferences.getInt(key, 0);
           PlayNoteCore.getInstance().setRefPitch(intValue);
           MetronomeCore.getInstance().setRefPitch(intValue);
           break;
 
-        case SettingsCore.SETTING_TUNER_TRANSPOSITION:
+        case SettingsCore.SETTING_NOTE_TRANSPOSITION:
           intValue = Integer.parseInt(sharedPreferences.getString(key, "0"));
           UiCore.getInstance().setTransposition(intValue);
           break;
 
-        case SettingsCore.SETTING_TUNER_TEMPERAMENT:
+        case SettingsCore.SETTING_NOTE_TEMPERAMENT:
           intValue = Integer.parseInt(sharedPreferences.getString(key, "0"));
           PlayNoteCore.getInstance().setTemperament(intValue);
           break;
@@ -171,15 +169,7 @@ public class SettingsCore extends BaseCore
           // Not monitored
           break;
 
-        case SettingsCore.SETTING_SOUNDANALYZE_THRESHOLD:
-          intValue = sharedPreferences.getInt(key, 0);
-          SoundAnalyzeCore.getInstance().setThreshold(intValue);
-          break;
 
-        case SettingsCore.SETTING_SOUNDANALYZE_ALGORITHM:
-          strValue = sharedPreferences.getString(key, "0");
-          SoundAnalyzeCore.getInstance().setAlgo(Integer.parseInt(strValue));
-          break;
 
         case SettingsCore.SETTING_ADVANCED_FPS:
           intValue = Integer.parseInt(sharedPreferences.getString(key, "0"));

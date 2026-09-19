@@ -1,20 +1,22 @@
-# 调音节拍 · TuneBeat
+# 节拍器 · TuneBeat
 
-轻量独立 Android 调音／节拍工具，当前 **0.3.0-v02**。
+轻量独立 Android 节拍工具，当前 **0.4.0**。
 
-- 中文深色节拍器：30–240 BPM、加减／圆盘／输入，2/4、3/4、4/4、6/8；主拍细分与小节边界切换，锁屏播放、通知停止。
-- 六弦调音器：Strat 木色琴头，默认自动选弦／手动锁弦，实测音与目标音分开显示，标准 E2 A2 D3 G3 B3 E4，A4=440Hz。
-- 页面和速度记忆，启动保持暂停。只在使用调音时申请麦克风权限。
-- 无广告、无联网服务；包名 `io.github.a3322505a.tunebeat`，与 Diatronome 并存。
+- 中文深色界面：30–240 BPM、加减／圆盘／输入；2/4、3/4、4/4、6/8。
+- 主拍细分、小节边界切换、锁屏播放、通知停止。
+- 保存速度、拍号和细分；冷启动保持暂停。
+- 无广告、无联网服务、无需麦克风权限。
+- 包名 `io.github.a3322505a.tunebeat` 不变，沿用原签名覆盖安装。
 
-基于 Diatronome 1.0.15（GPL-3.0），保留 LICENSE 与源码作者署名。原生 UI；当前节拍使用连续 PCM 采样时钟，调音使用 TarsosDSP MPM（GPL-3.0）。详情见 [P0](docs/P0-验证记录.md)、[P1](docs/P1-验证记录.md)、[P2](docs/P2-验证记录.md)。
+用户实测调音不准，2026-09-19 决定改用实体调音器；调音功能、琴头界面、拾音算法及相关开发／验收任务已取消，不再返工。历史记录仅作为历史证据，不代表当前功能或待办。
+
+基于 Diatronome 1.0.15（GPL-3.0），保留 LICENSE 与源码作者署名。节拍使用连续 PCM 采样时钟。
 
 构建：JDK17、Gradle8.12、Android SDK36、Build Tools36.1.0。
 
 ```sh
-gradle :app:assembleRelease
+bash scripts/run-v02-probe.sh
+gradle :app:assembleRelease :app:testDebugUnitTest :app:assembleDebugAndroidTest
 ```
 
-Actions `TuneBeat-build` 提供未签名 APK，维护者使用单独保存的固定私钥签名后交付；私钥不进仓库或 CI。`Tool-verification` 保存测试与截图。P0、P1、P2 使用同一私有签名覆盖安装。
-
-V0.2 改进已进入实现与验证，来源和算法对照见 [V02-sources](docs/V02-sources.md)。手机实效单列待测；不包含旧方案 P3 跟拍评分。
+Actions `TuneBeat-build` 提供未签名 APK，使用单独保存的固定私钥签名交付；私钥不进仓库或 CI。`Tool-verification` 保存测试与截图。手机节拍实效与自动验证分别记录。
