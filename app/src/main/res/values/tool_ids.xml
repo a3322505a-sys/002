@@ -2,8 +2,4 @@
     <item name="tempo_minus" type="id"/><item name="tempo_plus" type="id"/>
     <item name="tempo_value" type="id"/><item name="tempo_dial" type="id"/>
     <item name="play_pause" type="id"/><item name="beat_dots" type="id"/>
-    <item name="tab_tuner" type="id"/><item name="tab_metronome" type="id"/>
-    <item name="tuner_status" type="id"/><item name="target_note" type="id"/>
-    <item name="string_1" type="id"/><item name="string_2" type="id"/><item name="string_3" type="id"/>
-    <item name="string_4" type="id"/><item name="string_5" type="id"/><item name="string_6" type="id"/>
 </resources>

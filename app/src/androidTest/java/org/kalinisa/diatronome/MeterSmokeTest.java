@@ -30,23 +30,4 @@ public class MeterSmokeTest {
    assertEquals(2,ins.getTargetContext().getSharedPreferences("tunebeat",0).getInt("meter_n",0));
   }finally{ins.runOnMainSync(()->{a.stopMetronome();c.setTempoBpm(60);c.requestConfig(BeatConfig.DEFAULT);a.finish();});ins.waitForIdleSync();}
  }
- @Test public void pitchDetectorOnAndroid(){
-  GuitarPitchDetector detector=new GuitarPitchDetector();short[] pcm=new short[4096];long started=System.nanoTime();int count=0;
-  for(int string=0;string<6;string++)for(int repeat=0;repeat<3;repeat++){
-   double hz=TuningMath.frequency(string);
-   for(int i=0;i<pcm.length;i++)pcm[i]=(short)(8000*Math.sin(2*Math.PI*hz*i/44100));
-   GuitarPitchDetector.Result result=detector.detect(pcm);assertTrue(result.valid());assertEquals(string,TuningMath.nearestString(result.hz));count++;
-  }
-  android.util.Log.i("TuneBeat-V02","Emulator detector mean_ms="+((System.nanoTime()-started)/1e6/count)+" frames="+count+"; phone performance unmeasured");
- }
- @Test public void headstockTargetsAtNarrowWidth(){
-  Instrumentation ins=InstrumentationRegistry.getInstrumentation();
-  ins.runOnMainSync(()->{
-   HeadstockView v=new HeadstockView(ins.getTargetContext());float density=ins.getTargetContext().getResources().getDisplayMetrics().density;
-   int w=(int)(232*density),h=(int)(370*density);v.layout(0,0,w,h);
-   float scale=Math.min(w/320f,h/640f),dx=(w-320*scale)/2;
-   float[] x={207,192,177,162,147,132},y={62,146,230,314,398,482};
-   for(int i=0;i<6;i++){float cx=dx+(x[i]-16)*scale,cy=y[i]*scale;assertEquals(i,v.hit(cx,cy));assertEquals(i,v.hit(cx-23*density,cy-23*density));assertEquals(i,v.hit(cx+23*density,cy+23*density));}
-  });
- }
 }

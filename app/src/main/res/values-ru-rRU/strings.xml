@@ -3,7 +3,6 @@
   <string name="common_yes">Да</string>
   <string name="common_no">Нет</string>
   <string name="action_settings">Настройки</string>
-  <string name="action_tuner">Тюнер</string>
   <string name="action_playnote">Синтезатор</string>
   <string name="action_metronome">Метроном</string>
   <string name="action_about">О приложении</string>
@@ -21,12 +20,11 @@
   <string name="preference_system_color">Цвет приложения</string>
   <string name="preference_system_homescreen">Главная страница</string>
 
-  <string name="preference_tuner_title">Настройки приложения</string>
-  <string name="preference_tuner_pitch">Калибровка тона для A4</string>
-  <string name="preference_tuner_notename">Название нот</string>
-  <string name="preference_tuner_usesharpflat">♯ вместо ♭</string>
-  <string name="preference_tuner_transposition">Транспозиция</string>
-  <string name="preference_tuner_temperament">Темперамент</string>
+  <string name="preference_note_pitch">Калибровка тона для A4</string>
+  <string name="preference_note_notename">Название нот</string>
+  <string name="preference_note_usesharpflat">♯ вместо ♭</string>
+  <string name="preference_note_transposition">Транспозиция</string>
+  <string name="preference_note_temperament">Темперамент</string>
 
   <string name="preference_synthesizer_title">Синтезатор</string>
   <string name="preference_synthesizer_waveform">Форма волны фортепиано</string>
@@ -42,18 +40,9 @@
   <string name="preference_metronome_bidirectionalneedle">Метроном Двунаправленная игла</string>
 
   <string name="preference_advanced_title">Расширенные</string>
-  <string name="preference_advanced_sensitivity">Чувствительность микрофона</string>
-  <string name="preference_advanced_algorithm">Алгоритм</string>
   <string name="preference_advanced_fps">Кадров в секунду</string>
 
   <!-- about -->
-  <string name="about_content"><![CDATA[
-    <b><i>Diatronome</i></b> предоставляет вам <i>тюнер</i>, a <i>визуальный метроном</i> и <i>синтезатор</i>.
-    Это свободное приложение с открытым исходным кодом, приватное и без рекламы.<br/>
-    <b>Лицензия: </b>%1$s<br/>
-    <b>Исходники: </b><a href="%2$s">%2$s</a><br/>
-    <b>Поддержка: </b><a href="%3$s">%3$s</a><br/>
-  ]]></string>
 
   <!-- string array -->
   <string-array name="array_notes_name">
@@ -88,7 +77,6 @@
   </string-array>
 
   <string-array name="array_homescreen">
-    <item>Тюнер</item>
     <item>Метроном</item>
     <item>Плеер</item>
   </string-array>
@@ -108,12 +96,6 @@
     <item>B</item>
   </string-array>
 
-  <string-array name="array_algorithm">
-    <item>Envelop Pitch detection</item>
-    <item>Yin</item>
-    <item>FFT Быст. Фурье - Спектральный</item>
-    <!-- <item>Peak detector</item> -->
-  </string-array>
 
   <!-- EDO = Equals Division Octave = TET = Tone Equal Temperament -->
   <string-array name="array_temperament">

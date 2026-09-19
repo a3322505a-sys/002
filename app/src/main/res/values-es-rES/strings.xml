@@ -1,16 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="about_content"><![CDATA[
-    <b><i>Diatronome</i></b> ofrece un <i>afinador</i>, un <i>metrónomo visual</i> y un <i>sintetizador</i>.
-    Esta aplicación es de código abierto, respetuosa con la privacidad y sin publicidad.<br/>
-    <b>Licencia: </b>%1$s<br/>
-    <b>Fuentes: </b><a href="%2$s">%2$s</a><br/>
-    <b>Apoyo: </b><a href="%3$s">%3$s</a><br/>
-  ]]></string>
   <string name="common_yes">Sí</string>
   <string name="common_no">No</string>
   <string name="action_settings">Ajustes</string>
-  <string name="action_tuner">Afinador</string>
   <string name="action_playnote">Sintetizador</string>
   <string name="action_metronome">Metrónomo</string>
   <string name="action_about">Acerca de</string>
@@ -27,12 +19,11 @@
   <string name="preference_system_color">Color de la aplicación</string>
   <string name="preference_system_homescreen">Pantalla de inicio</string>
 
-  <string name="preference_tuner_title">Afinador</string>
-  <string name="preference_tuner_pitch">Calibración para A4</string>
-  <string name="preference_tuner_notename">Nombre de las notas</string>
-  <string name="preference_tuner_usesharpflat">♯ en lugar de ♭</string>
-  <string name="preference_tuner_transposition">Transposición</string>
-  <string name="preference_tuner_temperament">Temperamento</string>
+  <string name="preference_note_pitch">Calibración para A4</string>
+  <string name="preference_note_notename">Nombre de las notas</string>
+  <string name="preference_note_usesharpflat">♯ en lugar de ♭</string>
+  <string name="preference_note_transposition">Transposición</string>
+  <string name="preference_note_temperament">Temperamento</string>
 
   <string name="preference_synthesizer_title">Sintetizador</string>
   <string name="preference_synthesizer_waveform">Sonido de piano</string>
@@ -48,8 +39,6 @@
   <string name="preference_metronome_bidirectionalneedle">Aguja bidireccional</string>
 
   <string name="preference_advanced_title">Avanzado</string>
-  <string name="preference_advanced_sensitivity">Sensibilidad del micrófono</string>
-  <string name="preference_advanced_algorithm">Algoritmo</string>
   <string name="preference_advanced_fps">Fotogramas por segundo</string>
 
   <string-array name="array_notes_name">
@@ -84,7 +73,6 @@
   </string-array>
 
   <string-array name="array_homescreen">
-    <item>Afinador</item>
     <item>Metrónomo</item>
     <item>Piano</item>
   </string-array>

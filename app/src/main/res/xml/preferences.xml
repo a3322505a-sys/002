@@ -38,13 +38,13 @@
       android:dialogIcon="@android:drawable/ic_menu_gallery"
       android:entries="@array/array_homescreen"
       android:entryValues="@array/array_homescreen_data"
-      android:defaultValue="HOME_SCREEN_TUNER" />
+      android:defaultValue="HOME_SCREEN_METRONOME" />
   </PreferenceCategory>
 
   <PreferenceCategory
-    android:key="setting_tuner"
-    android:title="@string/preference_tuner_title">
-    <!-- Range is one octave center on 440 Hz. Duplicate min/max in tuner fragment -->
+    android:key="setting_note"
+    android:title="@string/preference_note_title">
+    <!-- Range is one octave center on 440 Hz. Used by legacy note playback -->
     <org.kalinisa.diatronome.Ui.NumberPickerPreference
       android:inputType="numberDecimal"
       android:maxLength="5"
@@ -52,10 +52,10 @@
       android:defaultValue="440"
       android:icon="@drawable/icon_pitch"
       android:key="setting_pitch_ref"
-      android:title="@string/preference_tuner_pitch"
+      android:title="@string/preference_note_pitch"
       android:dialogIcon="@drawable/icon_pitch"
       android:dialogMessage=""
-      android:dialogTitle="@string/preference_tuner_pitch"
+      android:dialogTitle="@string/preference_note_pitch"
       android:negativeButtonText="@android:string/cancel"
       android:positiveButtonText="@android:string/ok"
       app:min="250"
@@ -67,16 +67,16 @@
       android:dialogIcon="@drawable/icon_notename"
       android:icon="@drawable/icon_notename"
       android:key="setting_note_name"
-      android:title="@string/preference_tuner_notename" />
+      android:title="@string/preference_note_notename" />
     <SwitchPreference
       android:defaultValue="false"
       android:icon="@drawable/icon_sharpflat"
       android:switchTextOff="\\u266D"
       android:switchTextOn="\\u266F"
       android:key="setting_use_sharp_flat"
-      android:title="@string/preference_tuner_usesharpflat" />
+      android:title="@string/preference_note_usesharpflat" />
     <ListPreference
-      android:title="@string/preference_tuner_transposition"
+      android:title="@string/preference_note_transposition"
       android:entries="@array/array_transposition"
       android:entryValues="@array/array_transposition_data"
       android:defaultValue="0"
@@ -88,7 +88,7 @@
       android:icon="@drawable/icon_temperament"
       android:dialogIcon="@drawable/icon_temperament"
       android:key="setting_temperament"
-      android:title="@string/preference_tuner_temperament"
+      android:title="@string/preference_note_temperament"
       android:entries="@array/array_temperament"
       android:entryValues="@array/array_temperament_data" />
   </PreferenceCategory>
@@ -179,23 +179,6 @@
   <PreferenceCategory
     android:key="setting_advanced"
     android:title="@string/preference_advanced_title">
-    <SeekBarPreference
-      android:min="0"
-      android:max="10"
-      android:defaultValue="5"
-      android:icon="@drawable/icon_threshold"
-      android:key="setting_soundanalyze_threshold"
-      android:title="@string/preference_advanced_sensitivity"
-      tools:ignore="UnusedAttribute" />
-    <ListPreference
-      android:defaultValue="1"
-      android:icon="@drawable/icon_algo"
-      android:dialogIcon="@drawable/icon_algo"
-      android:key="setting_soundanalyze_algorithm"
-      android:title="@string/preference_advanced_algorithm"
-      android:entries="@array/array_algorithm"
-      android:entryValues="@array/array_algorithm_data"
-      tools:ignore="UnusedAttribute" />
     <ListPreference
       android:defaultValue="30"
       android:icon="@android:drawable/ic_menu_slideshow"

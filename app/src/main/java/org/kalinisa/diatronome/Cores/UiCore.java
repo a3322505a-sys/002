@@ -99,11 +99,7 @@ public class UiCore extends BaseCore
   public static int getHomeLayoutFormName(String screenName)
   {
     int homeLayout = 0;
-    if ("HOME_SCREEN_TUNER".equals(screenName))
-    {
-      homeLayout = R.layout.fragment_tuner;
-    }
-    else if ("HOME_SCREEN_METRONOME".equals(screenName))
+    if ("HOME_SCREEN_METRONOME".equals(screenName))
     {
       homeLayout = R.layout.fragment_metronome;
     }
@@ -113,7 +109,7 @@ public class UiCore extends BaseCore
     }
     else
     {
-      homeLayout = R.layout.fragment_tuner;
+      homeLayout = R.layout.fragment_metronome;
     }
     return homeLayout;
   }

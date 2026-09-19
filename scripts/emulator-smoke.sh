@@ -7,7 +7,6 @@ adb install -g app/build/outputs/apk/debug/app-debug.apk
 adb shell pm path org.kalinisa.diatronome
 adb shell pm path io.github.a3322505a.tunebeat
 gradle --no-daemon :app:connectedDebugAndroidTest
-adb pull /sdcard/Download/tunebeat-tuner.png verification/tuner.png
 adb pull /sdcard/Download/tunebeat-meter-v02.png verification/meter-v02.png
 # Exercise release code with a temporary CI certificate. The delivered APK is
 # signed offline with the persistent private key, which is never sent to CI.
@@ -16,7 +15,6 @@ smoke_keystore=$(awk '/^Store: / && $2 != "null" {sub(/^Store: /, ""); print; ex
 test -f "$smoke_keystore"
 "$ANDROID_HOME/build-tools/36.1.0/apksigner" sign --ks "$smoke_keystore" --ks-pass pass:android --key-pass pass:android --out verification/smoke-release.apk dist/*-unsigned.apk
 adb install -r verification/smoke-release.apk
-adb shell pm revoke io.github.a3322505a.tunebeat android.permission.RECORD_AUDIO
 adb shell am force-stop io.github.a3322505a.tunebeat
 adb shell am start -W -n io.github.a3322505a.tunebeat/org.kalinisa.diatronome.MainActivity | tee verification/release-launch.txt
 sleep 2
