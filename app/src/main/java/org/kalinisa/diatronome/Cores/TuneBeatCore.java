@@ -17,11 +17,13 @@ public final class TuneBeatCore extends BaseCore {
     private volatile Session current;
     private volatile BeatConfig audible=BeatConfig.DEFAULT,requested=BeatConfig.DEFAULT;
     private volatile int bpm=60,currentTick=-1;
+    private volatile int currentRhythmIndex=-1;
+    private volatile RhythmScore rhythmScore;
     private SharedPreferences prefs;
     private Runnable changed;
     private static final class Session {
-        volatile boolean cancelled;AudioTrack track;final BeatSequence sequence;
-        Session(BeatConfig c,int b){sequence=new BeatSequence(c,b);}
+        volatile boolean cancelled;AudioTrack track;final BeatSequence sequence;final RhythmScore rhythm;
+        Session(BeatConfig c,int b,RhythmScore rhythm){sequence=new BeatSequence(c,b);this.rhythm=rhythm;}
     }
     private TuneBeatCore(){}
     public static TuneBeatCore getInstance(){return INSTANCE;}
@@ -37,20 +39,27 @@ public final class TuneBeatCore extends BaseCore {
     public BeatConfig getRequestedConfig(){return requested;}
     public int getTempoBpm(){return bpm;}
     public int getCurrentTick(){return currentTick;}
+    public int getCurrentRhythmIndex(){return currentRhythmIndex;}
+    public RhythmScore getRhythmScore(){return rhythmScore;}
+    /** Call while stopped. A null score returns to the regular metronome. */
+    public synchronized void loadRhythmExercise(RhythmScore score){
+        if(current!=null)throw new IllegalStateException("Stop playback before changing the score");
+        rhythmScore=score;currentRhythmIndex=-1;changed();
+    }
     public boolean getIsPlaying(){return current!=null;}
-    public synchronized void setTempoBpm(int value){bpm=Math.max(30,Math.min(240,value));if(current!=null)current.sequence.request(requested,bpm);changed();}
+    public synchronized void setTempoBpm(int value){bpm=Math.max(30,Math.min(240,value));if(current!=null)current.sequence.request(current.rhythm==null?requested:BeatConfig.DEFAULT,bpm);changed();}
     public synchronized void requestConfig(BeatConfig config){
         requested=config;
         if(current==null){audible=config;save();}else current.sequence.request(config,bpm);
         changed();
     }
     public synchronized void play(){
-        if(current!=null)return;Session s=new Session(requested,bpm);current=s;currentTick=-1;worker.execute(()->stream(s));sendMessage(HANDLER_MSG_PLAY,1,0);
+        if(current!=null)return;Session s=new Session(rhythmScore==null?requested:BeatConfig.DEFAULT,bpm,rhythmScore);current=s;currentTick=-1;currentRhythmIndex=-1;worker.execute(()->stream(s));sendMessage(HANDLER_MSG_PLAY,1,0);
     }
     public synchronized void stop(){
         Session s=current;current=null;
         if(s!=null){s.cancelled=true;synchronized(s){if(s.track!=null)try{s.track.pause();s.track.flush();}catch(IllegalStateException ignored){}}}
-        currentTick=-1;audible=requested;save();changed();sendMessage(HANDLER_MSG_PLAY,0,0);
+        currentTick=-1;currentRhythmIndex=-1;audible=requested;save();changed();sendMessage(HANDLER_MSG_PLAY,0,0);
     }
     private void stream(Session s){
         AudioTrack track=null;
@@ -64,7 +73,7 @@ public final class TuneBeatCore extends BaseCore {
                     new AudioFormat.Builder().setSampleRate(BeatSequence.RATE).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).setEncoding(AudioFormat.ENCODING_PCM_16BIT).build(),Math.max(min,2048),AudioTrack.MODE_STREAM,AudioManager.AUDIO_SESSION_ID_GENERATE);
                 s.track=track;if(track.getState()!=AudioTrack.STATE_INITIALIZED)throw new IllegalStateException("No audio output");track.play();
             }
-            BeatRenderer renderer=new BeatRenderer(s.sequence);ArrayDeque<BeatSequence.Event> events=new ArrayDeque<>();short[] pcm=new short[256];
+            BeatRenderer renderer=new BeatRenderer(s.sequence,s.rhythm);ArrayDeque<BeatSequence.Event> events=new ArrayDeque<>();short[] pcm=new short[256];
             while(!s.cancelled){
                 renderer.render(pcm,events);int offset=0;
                 while(offset<pcm.length&&!s.cancelled){int n=track.write(pcm,offset,pcm.length-offset);if(n<=0)throw new IllegalStateException("Audio write failed");offset+=n;}
@@ -73,8 +82,9 @@ public final class TuneBeatCore extends BaseCore {
                 BeatSequence.Event latest=null;while(!events.isEmpty()&&events.peekFirst().frame<head)latest=events.removeFirst();
                 if(latest!=null){final BeatSequence.Event e=latest;main.post(()->{
                     if(current!=s||s.cancelled)return;
-                    if(!audible.equals(e.config)){audible=e.config;save();changed();}
-                    currentTick=e.tick;sendMessage(HANDLER_MSG_TICK,e);});}
+                    if(s.rhythm==null&&!audible.equals(e.config)){audible=e.config;save();changed();}
+                    currentTick=e.tick;if(e.rhythmIndex>=0)currentRhythmIndex=e.rhythmIndex;
+                    sendMessage(HANDLER_MSG_TICK,e);});}
             }
         }catch(RuntimeException failure){if(!s.cancelled)main.post(()->{if(current==s){stop();sendMessage(HANDLER_MSG_ERROR,0,0);}});}
         finally{synchronized(s){if(track!=null){try{track.pause();track.flush();}catch(IllegalStateException ignored){}track.release();}s.track=null;}}

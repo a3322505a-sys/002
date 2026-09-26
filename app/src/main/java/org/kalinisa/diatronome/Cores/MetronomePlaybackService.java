@@ -7,6 +7,7 @@ import android.os.*;
 import androidx.core.app.NotificationCompat;
 import org.kalinisa.diatronome.MainActivity;
 import org.kalinisa.diatronome.R;
+import org.kalinisa.diatronome.Tools.RhythmScore;
 
 /** Owns background playback and audio focus. Process recreation never resumes sound. */
 public class MetronomePlaybackService extends Service {
@@ -24,8 +25,10 @@ public class MetronomePlaybackService extends Service {
         PendingIntent open=PendingIntent.getActivity(this,0,new Intent(this,MainActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|immutable);
         PendingIntent stop=PendingIntent.getService(this,1,new Intent(this,MetronomePlaybackService.class).setAction(STOP),PendingIntent.FLAG_UPDATE_CURRENT|immutable);
         TuneBeatCore core=TuneBeatCore.getInstance();
-        return new NotificationCompat.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_launcher).setContentTitle("节拍器正在播放")
-            .setContentText(core.getTempoBpm()+" BPM · "+core.getConfig().meter()+" · "+core.getConfig().detail()).setContentIntent(open).setOngoing(true).setSilent(true).addAction(0,"停止",stop).build();
+        RhythmScore rhythm=core.getRhythmScore();
+        String detail=rhythm==null?core.getConfig().meter()+" · "+core.getConfig().detail():"4/4 · "+rhythm.bars()+" 小节循环";
+        return new NotificationCompat.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_launcher).setContentTitle(rhythm==null?"节拍器正在播放":"节奏练习正在播放")
+            .setContentText(core.getTempoBpm()+" BPM · "+detail).setContentIntent(open).setOngoing(true).setSilent(true).addAction(0,"停止",stop).build();
     }
     @Override public void onCreate(){super.onCreate();audio=(AudioManager)getSystemService(AUDIO_SERVICE);TuneBeatCore.getInstance().setChangeListener(()->{if(foreground){if(!TuneBeatCore.getInstance().getIsPlaying()){stopSelf();return;}((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).notify(1686,notification());}});}
     @Override public IBinder onBind(Intent i){return null;}

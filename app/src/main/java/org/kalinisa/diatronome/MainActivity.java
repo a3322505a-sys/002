@@ -29,6 +29,10 @@ public class MainActivity extends AppCompatActivity {
     private Button play;
     private DialView dial;
     private BeatDots dots;
+    private ScrollView pageScroll;
+    private RhythmScoreView scoreView;
+    private boolean practicePage;
+    private int lastPracticeBar=-1;
     protected TuneBeatCore core;
     private boolean compact;
 
@@ -36,6 +40,10 @@ public class MainActivity extends AppCompatActivity {
         @Override public void handleMessage(Message msg){
             if(msg.what==TuneBeatCore.HANDLER_MSG_TICK && dots!=null && msg.obj instanceof BeatSequence.Event){
                 BeatSequence.Event e=(BeatSequence.Event)msg.obj;dots.setConfig(e.config);dots.setBeat(e.tick);
+            }
+            if(msg.what==TuneBeatCore.HANDLER_MSG_TICK && practicePage && scoreView!=null && msg.obj instanceof BeatSequence.Event){
+                BeatSequence.Event e=(BeatSequence.Event)msg.obj;
+                if(e.rhythmIndex>=0)showPracticePosition(e.rhythmIndex);
             }
             if(msg.what==TuneBeatCore.HANDLER_MSG_CONFIG)renderMeter();
             if(msg.what==TuneBeatCore.HANDLER_MSG_ERROR)Toast.makeText(MainActivity.this,"音频暂不可用，请重试",Toast.LENGTH_SHORT).show();
@@ -63,13 +71,13 @@ public class MainActivity extends AppCompatActivity {
     protected void showInitialPage(){
         // Retire obsolete tuner state without resetting tempo or meter preferences.
         prefs.edit().remove("tunerPage").remove("string").remove("microphoneAsked").apply();
-        showMetronome();
+        if(TuneBeatCore.getInstance().getRhythmScore()!=null)showPractice();else showMetronome();
     }
 
     protected int dp(float n){return ToolUi.dp(this,n);}
     protected LinearLayout page(){
         body.removeAllViews();
-        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);
+        ScrollView scroll=new ScrollView(this);pageScroll=scroll;scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);
         LinearLayout content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setGravity(Gravity.CENTER_HORIZONTAL);
         content.setPadding(dp(24),dp(compact?8:12),dp(24),dp(compact?8:16));
         scroll.addView(content,new ScrollView.LayoutParams(-1,-2));body.addView(scroll,new FrameLayout.LayoutParams(-1,-1));return content;
@@ -79,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
         core.setHandler(messages);
     }
     protected void showMetronome(){
+        practicePage=false;scoreView=null;lastPracticeBar=-1;
         title.setText("节拍器");ensureCore();LinearLayout content=page();
         LinearLayout numbers=new LinearLayout(this);numbers.setGravity(Gravity.CENTER);numbers.setOrientation(LinearLayout.HORIZONTAL);
         Button minus=roundButton("−","速度减一");minus.setId(R.id.tempo_minus);numbers.addView(minus,new LinearLayout.LayoutParams(dp(52),dp(52)));
@@ -98,6 +107,57 @@ public class MainActivity extends AppCompatActivity {
         dots=new BeatDots(this);dots.setId(R.id.beat_dots);content.addView(dots,new LinearLayout.LayoutParams(-1,dp(compact?28:42)));
         meterText=ToolUi.text(this,"",22,ToolUi.TEXT);meterText.setId(R.id.meter_config);meterText.setFocusable(true);meterText.setOnClickListener(v->chooseMeter());LinearLayout.LayoutParams meterLp=new LinearLayout.LayoutParams(-1,dp(48));meterLp.topMargin=dp(compact?6:14);content.addView(meterText,meterLp);
         meterDetail=ToolUi.text(this,"",12,ToolUi.MUTED);content.addView(meterDetail);renderMeter();updatePlaying();
+        Button practice=roundButton("节奏练习  →","打开连续节奏练习");practice.setTextSize(18);
+        LinearLayout.LayoutParams practiceLp=new LinearLayout.LayoutParams(-1,dp(52));practiceLp.topMargin=dp(22);
+        content.addView(practice,practiceLp);practice.setOnClickListener(v->loadRhythmExercise(RhythmScore.randomPractice()));
+    }
+    /** A caller can supply a validated 4/4 score via RhythmScore.of(...). */
+    public void loadRhythmExercise(RhythmScore score){
+        if(core==null)ensureCore();
+        if(core.getIsPlaying())stopMetronome();
+        core.loadRhythmExercise(score);
+        if(score==null)showMetronome();else showPractice();
+    }
+    private void showPractice(){
+        practicePage=true;lastPracticeBar=-1;dots=null;dial=null;meterText=null;meterDetail=null;
+        title.setText("节奏练习");ensureCore();
+        RhythmScore score=core.getRhythmScore();if(score==null){showMetronome();return;}
+        LinearLayout content=page();
+        TextView info=ToolUi.text(this,"4/4 · "+score.bars()+" 小节 · 播完自动循环",15,ToolUi.MUTED);
+        content.addView(info,new LinearLayout.LayoutParams(-1,dp(40)));
+        LinearLayout tempo=new LinearLayout(this);tempo.setGravity(Gravity.CENTER_VERTICAL);
+        Button minus=roundButton("−","速度减一"),plus=roundButton("+","速度加一");
+        tempo.addView(minus,new LinearLayout.LayoutParams(dp(46),dp(46)));
+        bpmText=ToolUi.text(this,core.getTempoBpm()+" BPM  ▾",25,ToolUi.TEXT);bpmText.setId(R.id.tempo_value);
+        tempo.addView(bpmText,new LinearLayout.LayoutParams(0,dp(54),1));
+        tempo.addView(plus,new LinearLayout.LayoutParams(dp(46),dp(46)));
+        minus.setOnClickListener(v->changeTempo(core.getTempoBpm()-1));plus.setOnClickListener(v->changeTempo(core.getTempoBpm()+1));
+        bpmText.setOnClickListener(v->inputTempo());content.addView(tempo,new LinearLayout.LayoutParams(-1,-2));
+        play=roundButton("▶","开始跟拍");play.setId(R.id.play_pause);play.setTextColor(ToolUi.MINT);play.setTextSize(28);
+        LinearLayout.LayoutParams playLp=new LinearLayout.LayoutParams(dp(96),dp(76));playLp.topMargin=dp(12);
+        content.addView(play,playLp);play.setOnClickListener(v->togglePlayback());
+        LinearLayout actions=new LinearLayout(this);actions.setGravity(Gravity.CENTER);
+        Button regenerate=roundButton("换一段","重新随机生成十二小节");regenerate.setTextSize(16);
+        Button back=roundButton("返回节拍器","退出节奏练习");back.setTextSize(16);
+        actions.addView(regenerate,new LinearLayout.LayoutParams(0,dp(48),1));
+        LinearLayout.LayoutParams backLp=new LinearLayout.LayoutParams(0,dp(48),1);backLp.leftMargin=dp(8);actions.addView(back,backLp);
+        regenerate.setOnClickListener(v->loadRhythmExercise(RhythmScore.randomPractice()));
+        back.setOnClickListener(v->loadRhythmExercise(null));
+        LinearLayout.LayoutParams actionsLp=new LinearLayout.LayoutParams(-1,-2);actionsLp.topMargin=dp(15);content.addView(actions,actionsLp);
+        TextView guidance=ToolUi.text(this,"跟着高亮弹奏；休止停下。空心是二分，点是附点，3 是三连音。",13,ToolUi.MUTED);
+        LinearLayout.LayoutParams guideLp=new LinearLayout.LayoutParams(-1,-2);guideLp.topMargin=dp(14);content.addView(guidance,guideLp);
+        scoreView=new RhythmScoreView(this,score);scoreView.setId(R.id.rhythm_score);
+        LinearLayout.LayoutParams scoreLp=new LinearLayout.LayoutParams(-1,-2);scoreLp.topMargin=dp(12);content.addView(scoreView,scoreLp);
+        updatePlaying();if(core.getCurrentRhythmIndex()>=0)showPracticePosition(core.getCurrentRhythmIndex());
+    }
+    private void showPracticePosition(int index){
+        RhythmScore score=core.getRhythmScore();if(score==null||index>=score.size())return;
+        scoreView.setCurrentNote(index);
+        int bar=score.note(index).bar;
+        if(bar/2!=lastPracticeBar/2||lastPracticeBar<0){
+            pageScroll.smoothScrollTo(0,Math.max(0,scoreView.getTop()+scoreView.rowTopForBar(bar)-dp(90)));
+        }
+        lastPracticeBar=bar;
     }
     private void renderMeter(){
         if(core==null||meterText==null)return;
@@ -128,7 +188,9 @@ public class MainActivity extends AppCompatActivity {
         });});dialog.show();input.requestFocus();dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
     }
     private void changeTempo(int value){
-        int bpm=Math.max(30,Math.min(240,value));core.setTempoBpm(bpm);prefs.edit().putInt("bpm",bpm).apply();bpmText.setText(""+bpm);dial.setTempo(bpm);
+        int bpm=Math.max(30,Math.min(240,value));core.setTempoBpm(bpm);prefs.edit().putInt("bpm",bpm).apply();
+        if(bpmText!=null)bpmText.setText(practicePage?bpm+" BPM  ▾":""+bpm);
+        if(dial!=null)dial.setTempo(bpm);
     }
     protected void togglePlayback(){
         if(core.getIsPlaying())stopMetronome();
@@ -143,7 +205,9 @@ public class MainActivity extends AppCompatActivity {
     }
     private void updatePlaying(){
         if(play==null||core==null)return;renderMeter();boolean active=core.getIsPlaying();play.setText(active?"Ⅱ":"▶");play.setContentDescription(active?"暂停节拍":"开始节拍");if(!active&&dots!=null)dots.setBeat(-1);
+        if(!active&&scoreView!=null){scoreView.setCurrentNote(-1);lastPracticeBar=-1;}
     }
+    @Override public void onBackPressed(){if(practicePage)loadRhythmExercise(null);else super.onBackPressed();}
     @Override protected void onResume(){super.onResume();if(core!=null)core.setHandler(messages);updatePlaying();}
     @Override protected void onDestroy(){if(core!=null)core.setHandler(null);messages.removeCallbacksAndMessages(null);super.onDestroy();}
 }

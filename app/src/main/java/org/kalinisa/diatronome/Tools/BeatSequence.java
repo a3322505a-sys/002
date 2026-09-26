@@ -4,8 +4,9 @@ package org.kalinisa.diatronome.Tools;
 public final class BeatSequence {
     public static final int RATE=44100;
     public static final class Event {
-        public final long frame; public final int tick,bpm; public final BeatConfig config;
-        Event(long f,int t,int b,BeatConfig c){frame=f;tick=t;bpm=b;config=c;}
+        public final long frame; public final int tick,bpm,rhythmIndex; public final BeatConfig config;
+        Event(long f,int t,int b,BeatConfig c){this(f,t,b,c,-1);}
+        Event(long f,int t,int b,BeatConfig c,int rhythmIndex){frame=f;tick=t;bpm=b;config=c;this.rhythmIndex=rhythmIndex;}
     }
     private BeatConfig active,requested;
     private int tempo,requestedTempo,tick;
