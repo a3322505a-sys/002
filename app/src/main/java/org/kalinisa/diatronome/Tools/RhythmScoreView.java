@@ -6,7 +6,7 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.view.View;
 
-/** Compact single-line rhythm notation, two bars per row. */
+/** Single-line rhythm notation with one full-width bar per row. */
 public final class RhythmScoreView extends View {
     private final RhythmScore score;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -14,21 +14,21 @@ public final class RhythmScoreView extends View {
     private final int rowHeight;
 
     public RhythmScoreView(Context context, RhythmScore score) {
-        super(context);this.score=score;rowHeight=ToolUi.dp(context,132);
+        super(context);this.score=score;rowHeight=ToolUi.dp(context,118);
         setContentDescription(score.bars()+" 小节节奏谱，跟随节拍高亮当前位置");
     }
     public void setCurrentNote(int index) { current=index;invalidate(); }
-    public int rowTopForBar(int bar) { return bar/2*rowHeight; }
+    public int rowTopForBar(int bar) { return bar*rowHeight; }
     @Override protected void onMeasure(int widthSpec,int heightSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthSpec),((score.bars()+1)/2)*rowHeight);
+        setMeasuredDimension(MeasureSpec.getSize(widthSpec),score.bars()*rowHeight);
     }
     private void color(int c,float size) {paint.setColor(c);paint.setTextSize(ToolUi.dp(getContext(),size));paint.setStyle(Paint.Style.FILL);paint.setStrokeWidth(ToolUi.dp(getContext(),2));}
     @Override protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        float margin=ToolUi.dp(getContext(),7), gap=ToolUi.dp(getContext(),16);
-        float width=(getWidth()-2*margin-gap)/2;
+        float margin=ToolUi.dp(getContext(),7);
+        float width=getWidth()-2*margin;
         for(int bar=0;bar<score.bars();bar++){
-            int row=bar/2,col=bar%2;float left=margin+col*(width+gap),top=row*rowHeight;
+            float left=margin,top=bar*rowHeight;
             float line=top+ToolUi.dp(getContext(),68),start=left+ToolUi.dp(getContext(),18),end=left+width-ToolUi.dp(getContext(),8);
             color(ToolUi.MUTED,11);canvas.drawText(String.valueOf(bar+1),left+ToolUi.dp(getContext(),3),top+ToolUi.dp(getContext(),23),paint);
             paint.setColor(0xff626b72);paint.setStrokeWidth(ToolUi.dp(getContext(),1));

@@ -123,6 +123,7 @@ public class MainActivity extends AppCompatActivity {
         title.setText("节奏练习");ensureCore();
         RhythmScore score=core.getRhythmScore();if(score==null){showMetronome();return;}
         LinearLayout content=page();
+        content.setPadding(content.getPaddingLeft(),content.getPaddingTop(),content.getPaddingRight(),dp(105));
         TextView info=ToolUi.text(this,"4/4 · "+score.bars()+" 小节 · 播完自动循环",15,ToolUi.MUTED);
         content.addView(info,new LinearLayout.LayoutParams(-1,dp(40)));
         LinearLayout tempo=new LinearLayout(this);tempo.setGravity(Gravity.CENTER_VERTICAL);
@@ -134,8 +135,10 @@ public class MainActivity extends AppCompatActivity {
         minus.setOnClickListener(v->changeTempo(core.getTempoBpm()-1));plus.setOnClickListener(v->changeTempo(core.getTempoBpm()+1));
         bpmText.setOnClickListener(v->inputTempo());content.addView(tempo,new LinearLayout.LayoutParams(-1,-2));
         play=roundButton("▶","开始跟拍");play.setId(R.id.play_pause);play.setTextColor(ToolUi.MINT);play.setTextSize(28);
-        LinearLayout.LayoutParams playLp=new LinearLayout.LayoutParams(dp(96),dp(76));playLp.topMargin=dp(12);
-        content.addView(play,playLp);play.setOnClickListener(v->togglePlayback());
+        play.setBackground(ToolUi.shape(ToolUi.PANEL,dp(48),ToolUi.MINT));
+        FrameLayout.LayoutParams playLp=new FrameLayout.LayoutParams(dp(76),dp(76),Gravity.BOTTOM|Gravity.END);
+        playLp.bottomMargin=dp(16);playLp.rightMargin=dp(16);
+        body.addView(play,playLp);play.setOnClickListener(v->togglePlayback());
         LinearLayout actions=new LinearLayout(this);actions.setGravity(Gravity.CENTER);
         Button regenerate=roundButton("换一段","重新随机生成十二小节");regenerate.setTextSize(16);
         Button back=roundButton("返回节拍器","退出节奏练习");back.setTextSize(16);
@@ -154,8 +157,8 @@ public class MainActivity extends AppCompatActivity {
         RhythmScore score=core.getRhythmScore();if(score==null||index>=score.size())return;
         scoreView.setCurrentNote(index);
         int bar=score.note(index).bar;
-        if(bar/2!=lastPracticeBar/2||lastPracticeBar<0){
-            pageScroll.smoothScrollTo(0,Math.max(0,scoreView.getTop()+scoreView.rowTopForBar(bar)-dp(90)));
+        if(bar!=lastPracticeBar){
+            pageScroll.smoothScrollTo(0,Math.max(0,scoreView.getTop()+scoreView.rowTopForBar(bar)-dp(145)));
         }
         lastPracticeBar=bar;
     }
