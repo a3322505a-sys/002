@@ -2,6 +2,7 @@ package org.kalinisa.diatronome;
 
 import android.app.Instrumentation;
 import android.content.Intent;
+import java.io.InputStream;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Test;
@@ -28,6 +29,8 @@ public class RhythmSmokeTest {
             Thread.sleep(1800);
             assertTrue(core.getIsPlaying());
             assertTrue("score cursor never reached the audio head",core.getCurrentRhythmIndex()>=0);
+            try(InputStream image=new android.os.ParcelFileDescriptor.AutoCloseInputStream(
+                ins.getUiAutomation().executeShellCommand("screencap -p /sdcard/Download/tunebeat-rhythm.png"))){while(image.read()!=-1){}}
             ins.runOnMainSync(()->{
                 activity.loadRhythmExercise(null);
                 assertNull(core.getRhythmScore());assertEquals(BeatConfig.of(6,8,3),core.getConfig());
