@@ -28,12 +28,29 @@ public class V02Probe {
   BeatSequence seq=new BeatSequence(BeatConfig.of(4,4,4),240);BeatRenderer renderer=new BeatRenderer(seq);
   ArrayDeque<BeatSequence.Event> events=new ArrayDeque<>();short[] pcm=new short[44100];renderer.render(pcm,events);
   check(events.size()==16,"PCM event count");for(BeatSequence.Event e:events){boolean sound=false;for(int i=(int)e.frame+1;i<e.frame+100;i++)sound|=pcm[i]!=0;check(sound,"missing PCM click");}
-  for(int run=0;run<20;run++){
-   RhythmScore score=RhythmScore.randomPractice();EnumSet<RhythmScore.Kind> kinds=EnumSet.noneOf(RhythmScore.Kind.class);
+  for(int run=0;run<40;run++)for(RhythmGenerator.Difficulty difficulty:RhythmGenerator.Difficulty.values())
+   for(RhythmGenerator.Theme theme:RhythmGenerator.Theme.values()){
+   RhythmGenerator.Options options=new RhythmGenerator.Options(difficulty,theme);
+   RhythmScore score=RhythmGenerator.generate(options,run);
+   RhythmScore same=RhythmGenerator.generate(options,run);
+   EnumSet<RhythmScore.Kind> kinds=EnumSet.noneOf(RhythmScore.Kind.class);
    check(score.bars()==12,"practice length");
    int[] barUnits=new int[12];for(int i=0;i<score.size();i++){RhythmScore.Note note=score.note(i);kinds.add(note.kind);barUnits[note.bar]+=note.kind.units;}
    for(int total:barUnits)check(total==RhythmScore.UNITS_PER_BAR,"invalid bar duration");
-   check(kinds.size()==RhythmScore.Kind.values().length,"missing initial rhythm kind");
+   check(score.size()==same.size(),"seed length");
+   for(int i=0;i<score.size();i++)check(score.note(i).kind==same.note(i).kind,"seed reproducibility");
+   if(options.difficulty==RhythmGenerator.Difficulty.BASIC)
+    check(!kinds.contains(RhythmScore.Kind.DOTTED_QUARTER)&&!kinds.contains(RhythmScore.Kind.TRIPLET_EIGHTH),"basic range");
+   if(options.difficulty==RhythmGenerator.Difficulty.INTERMEDIATE)
+    check(!kinds.contains(RhythmScore.Kind.TRIPLET_EIGHTH),"intermediate range");
+   if(theme!=RhythmGenerator.Theme.MIXED)for(int phrase=0;phrase<3;phrase++){
+    int count=0;for(int i=0;i<score.size();i++)if(score.note(i).bar/4==phrase&&
+      score.note(i).kind==(theme==RhythmGenerator.Theme.DOTTED?RhythmScore.Kind.DOTTED_QUARTER:RhythmScore.Kind.TRIPLET_EIGHTH))count++;
+    check(count>=2,"focused phrase missing target");
+   }
+   for(int phrase=1;phrase<3;phrase++){
+    check(score.note(0).kind==score.note(indexOfBar(score,phrase*4)).kind,"motif across phrases");
+   }
   }
   RhythmScore score=RhythmScore.randomPractice();
   BeatRenderer practice=new BeatRenderer(new BeatSequence(BeatConfig.DEFAULT,120),score);
@@ -55,4 +72,5 @@ public class V02Probe {
   check(nextNote==score.size()&&wrapped,"complete rhythm loop");
   System.out.println("PASS "+checks+" assertions: 13 configs, all 169 boundary transitions, sample PCM.");
  }
+ static int indexOfBar(RhythmScore score,int bar){for(int i=0;i<score.size();i++)if(score.note(i).bar==bar)return i;throw new AssertionError();}
 }

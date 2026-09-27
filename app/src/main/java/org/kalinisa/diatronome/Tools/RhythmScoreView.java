@@ -3,73 +3,98 @@ package org.kalinisa.diatronome.Tools;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.view.View;
 
-/** Single-line rhythm notation with one full-width bar per row. */
+/** One bar per line, with a shared twelve-unit beat coordinate. */
 public final class RhythmScoreView extends View {
     private final RhythmScore score;
-    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private int current = -1;
+    private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
     private final int rowHeight;
-
-    public RhythmScoreView(Context context, RhythmScore score) {
-        super(context);this.score=score;rowHeight=ToolUi.dp(context,118);
-        setContentDescription(score.bars()+" 小节节奏谱，跟随节拍高亮当前位置");
+    private int current=-1;
+    public RhythmScoreView(Context context,RhythmScore score){
+        super(context);this.score=score;rowHeight=dp(114);
+        setContentDescription(score.bars()+" 小节节奏谱，跟随高亮弹奏，休止时停下");
     }
-    public void setCurrentNote(int index) { current=index;invalidate(); }
-    public int rowTopForBar(int bar) { return bar*rowHeight; }
-    @Override protected void onMeasure(int widthSpec,int heightSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthSpec),score.bars()*rowHeight);
-    }
-    private void color(int c,float size) {paint.setColor(c);paint.setTextSize(ToolUi.dp(getContext(),size));paint.setStyle(Paint.Style.FILL);paint.setStrokeWidth(ToolUi.dp(getContext(),2));}
-    @Override protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-        float margin=ToolUi.dp(getContext(),7);
-        float width=getWidth()-2*margin;
+    private int dp(float n){return ToolUi.dp(getContext(),n);}
+    private void ink(int c,float width){p.setColor(c);p.setStrokeWidth(dp(width));p.setStyle(Paint.Style.FILL);}
+    private float pos(int units,float left,float span){return left+span*units/48f;}
+    public void setCurrentNote(int index){current=index;invalidate();}
+    public int rowTopForBar(int bar){return bar*rowHeight;}
+    @Override protected void onMeasure(int w,int h){setMeasuredDimension(MeasureSpec.getSize(w),score.bars()*rowHeight);}
+    @Override protected void onDraw(Canvas c){
+        super.onDraw(c);
+        float left=dp(47),right=getWidth()-dp(18),span=right-left;
         for(int bar=0;bar<score.bars();bar++){
-            float left=margin,top=bar*rowHeight;
-            float line=top+ToolUi.dp(getContext(),68),start=left+ToolUi.dp(getContext(),18),end=left+width-ToolUi.dp(getContext(),8);
-            color(ToolUi.MUTED,11);canvas.drawText(String.valueOf(bar+1),left+ToolUi.dp(getContext(),3),top+ToolUi.dp(getContext(),23),paint);
-            paint.setColor(0xff626b72);paint.setStrokeWidth(ToolUi.dp(getContext(),1));
-            canvas.drawLine(start,line,end,line,paint);canvas.drawLine(end,line-ToolUi.dp(getContext(),25),end,line+ToolUi.dp(getContext(),12),paint);
-            for(int beat=1;beat<4;beat++){
-                float x=start+(end-start)*beat/4f;paint.setColor(0xff454b50);
-                canvas.drawLine(x,line-ToolUi.dp(getContext(),17),x,line+ToolUi.dp(getContext(),18),paint);
+            float top=bar*rowHeight,y=top+dp(68);
+            ink(ToolUi.MUTED,1);p.setTextSize(dp(11));c.drawText(""+(bar+1),dp(6),top+dp(22),p);
+            if(bar==0){p.setTextSize(dp(15));c.drawText("4",dp(25),y-dp(9),p);c.drawText("4",dp(25),y+dp(8),p);}
+            ink(0xff737b84,1);c.drawLine(left-dp(9),y,right,y,p);
+            ink(0xffadb4ba,1.5f);c.drawLine(right,y-dp(29),right,y+dp(13),p);
+            for(int beat=1;beat<4;beat++){ink(0xff626b72,1);c.drawCircle(pos(beat*12,left,span),y+dp(19),dp(1.6f),p);}
+            int first=-1,last=-1;
+            for(int i=0;i<score.size();i++)if(score.note(i).bar==bar){if(first<0)first=i;last=i;}
+            for(int i=first;i>=0&&i<=last;i++){
+                RhythmScore.Note n=score.note(i);float x=pos(n.startUnit,left,span);
+                if(i==current){ink(0x5530d9ae,1);c.drawRoundRect(new RectF(x-dp(7),y-dp(47),
+                    Math.min(right,pos(n.startUnit+n.kind.units,left,span)-dp(2)),y+dp(23)),dp(6),dp(6),p);}
+                int color=i==current?ToolUi.MINT:ToolUi.TEXT;
+                if(n.kind.rest)rest(c,x,y,n.kind,color);else note(c,x,y,n.kind,color,beamed(i,first,last));
             }
-            for(int i=0;i<score.size();i++){
-                RhythmScore.Note n=score.note(i);if(n.bar!=bar)continue;
-                float x=start+(end-start)*(n.startUnit+1.5f)/RhythmScore.UNITS_PER_BAR;
-                float length=(end-start)*n.kind.units/RhythmScore.UNITS_PER_BAR;
-                if(i==current){
-                    color(0x5530d9ae,11);
-                    canvas.drawRoundRect(new RectF(x-ToolUi.dp(getContext(),8),line-ToolUi.dp(getContext(),37),
-                        Math.min(end,x+length-ToolUi.dp(getContext(),2)),line+ToolUi.dp(getContext(),38)),ToolUi.dp(getContext(),8),ToolUi.dp(getContext(),8),paint);
-                }
-                int ink=i==current?ToolUi.MINT:ToolUi.TEXT;
-                if(n.kind.rest){
-                    color(ink,17);canvas.drawText("休",x-ToolUi.dp(getContext(),8),line+ToolUi.dp(getContext(),5),paint);
-                }else{
-                    color(ink,11);
-                    if(n.kind==RhythmScore.Kind.HALF){paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(ToolUi.dp(getContext(),2));}
-                    canvas.save();canvas.rotate(-24,x,line);
-                    canvas.drawOval(new RectF(x-ToolUi.dp(getContext(),6),line-ToolUi.dp(getContext(),4),x+ToolUi.dp(getContext(),6),line+ToolUi.dp(getContext(),4)),paint);
-                    canvas.restore();paint.setStyle(Paint.Style.FILL);
-                    float stemX=x+ToolUi.dp(getContext(),5);
-                    canvas.drawLine(stemX,line,stemX,line-ToolUi.dp(getContext(),27),paint);
-                    if(n.kind==RhythmScore.Kind.EIGHTH||n.kind==RhythmScore.Kind.TRIPLET_EIGHTH)
-                        canvas.drawLine(stemX,line-ToolUi.dp(getContext(),27),stemX+ToolUi.dp(getContext(),7),line-ToolUi.dp(getContext(),17),paint);
-                    if(n.kind==RhythmScore.Kind.DOTTED_QUARTER)canvas.drawCircle(x+ToolUi.dp(getContext(),11),line-ToolUi.dp(getContext(),1),ToolUi.dp(getContext(),1.7f),paint);
-                    if(n.kind==RhythmScore.Kind.TRIPLET_EIGHTH&&n.startUnit%RhythmScore.UNITS_PER_BEAT==0){
-                        color(ink,11);canvas.drawText("3",x+ToolUi.dp(getContext(),5),line-ToolUi.dp(getContext(),33),paint);
+            for(int i=first;i>=0&&i<=last;){
+                RhythmScore.Note n=score.note(i);
+                int count=n.kind==RhythmScore.Kind.TRIPLET_EIGHTH?3:n.kind==RhythmScore.Kind.EIGHTH?2:0;
+                if(count>0&&n.startUnit%12==0&&i+count-1<=last){
+                    boolean valid=true;
+                    for(int j=0;j<count;j++){
+                        RhythmScore.Note m=score.note(i+j);
+                        if(m.kind!=n.kind||m.startUnit!=n.startUnit+j*n.kind.units)valid=false;
+                    }
+                    if(valid){
+                        float a=pos(n.startUnit,left,span)+dp(5);
+                        float b=pos(n.startUnit+12-n.kind.units,left,span)+dp(5);
+                        ink(ToolUi.TEXT,3);c.drawLine(a,y-dp(28),b,y-dp(28),p);
+                        if(count==3){ink(ToolUi.TEXT,1);p.setTextSize(dp(12));p.setTextAlign(Paint.Align.CENTER);
+                            c.drawText("3",(a+b)/2,y-dp(35),p);p.setTextAlign(Paint.Align.LEFT);}
+                        i+=count;continue;
                     }
                 }
-                String label=n.kind==RhythmScore.Kind.HALF?"二分":n.kind==RhythmScore.Kind.DOTTED_QUARTER?"附点":n.kind.rest?"休":"";
-                if(!label.isEmpty()){
-                    color(i==current?ToolUi.MINT:ToolUi.MUTED,9);
-                    canvas.drawText(label,x-ToolUi.dp(getContext(),9),line+ToolUi.dp(getContext(),31),paint);
-                }
+                i++;
             }
         }
+    }
+    private boolean beamed(int i,int first,int last){
+        RhythmScore.Note n=score.note(i);
+        if(n.kind==RhythmScore.Kind.TRIPLET_EIGHTH)return true;
+        if(n.kind!=RhythmScore.Kind.EIGHTH)return false;
+        if(n.startUnit%12==0)return i+1<=last&&score.note(i+1).kind==n.kind;
+        return n.startUnit%12==6&&i>first&&score.note(i-1).kind==n.kind
+            &&score.note(i-1).startUnit==n.startUnit-6;
+    }
+    private void note(Canvas c,float x,float y,RhythmScore.Kind kind,int color,boolean beamed){
+        ink(color,2);p.setStyle(kind==RhythmScore.Kind.HALF?Paint.Style.STROKE:Paint.Style.FILL);
+        c.save();c.rotate(-24,x,y);
+        c.drawOval(new RectF(x-dp(5.7f),y-dp(4),x+dp(5.7f),y+dp(4)),p);c.restore();
+        ink(color,1.8f);float stem=x+dp(5);c.drawLine(stem,y,stem,y-dp(28),p);
+        if(kind==RhythmScore.Kind.EIGHTH&&!beamed){
+            Path flag=new Path();flag.moveTo(stem,y-dp(28));
+            flag.cubicTo(stem+dp(12),y-dp(27),stem+dp(12),y-dp(18),stem+dp(5),y-dp(13));
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dp(2.3f));c.drawPath(flag,p);p.setStyle(Paint.Style.FILL);
+        }
+        if(kind==RhythmScore.Kind.DOTTED_QUARTER)c.drawCircle(x+dp(11),y-dp(1),dp(1.8f),p);
+    }
+    private void rest(Canvas c,float x,float y,RhythmScore.Kind kind,int color){
+        ink(color,2.5f);Path path=new Path();
+        if(kind==RhythmScore.Kind.QUARTER_REST){
+            path.moveTo(x+dp(1),y-dp(21));path.lineTo(x-dp(3),y-dp(14));
+            path.lineTo(x+dp(3),y-dp(7));path.lineTo(x-dp(2),y-dp(2));
+            path.cubicTo(x-dp(10),y-dp(7),x-dp(10),y+dp(5),x-dp(3),y+dp(7));
+        }else{
+            c.drawCircle(x-dp(4),y-dp(15),dp(3.3f),p);
+            path.moveTo(x-dp(2),y-dp(14));path.quadTo(x+dp(2),y-dp(12),x+dp(5),y-dp(17));
+            path.moveTo(x+dp(5),y-dp(20));path.lineTo(x-dp(1),y+dp(6));
+        }
+        p.setStyle(Paint.Style.STROKE);c.drawPath(path,p);p.setStyle(Paint.Style.FILL);
     }
 }
