@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private RhythmScoreView scoreView;
     private boolean practicePage;
     private int lastPracticeBar=-1;
+    private RhythmGenerator.Options practiceOptions=RhythmGenerator.Options.DEFAULT;
     protected TuneBeatCore core;
     private boolean compact;
 
@@ -109,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
         meterDetail=ToolUi.text(this,"",12,ToolUi.MUTED);content.addView(meterDetail);renderMeter();updatePlaying();
         Button practice=roundButton("节奏练习  →","打开连续节奏练习");practice.setTextSize(18);
         LinearLayout.LayoutParams practiceLp=new LinearLayout.LayoutParams(-1,dp(52));practiceLp.topMargin=dp(22);
-        content.addView(practice,practiceLp);practice.setOnClickListener(v->loadRhythmExercise(RhythmScore.randomPractice()));
+        content.addView(practice,practiceLp);practice.setOnClickListener(v->loadRhythmExercise(RhythmGenerator.generate(practiceOptions)));
     }
     /** A caller can supply a validated 4/4 score via RhythmScore.of(...). */
     public void loadRhythmExercise(RhythmScore score){
@@ -134,6 +135,22 @@ public class MainActivity extends AppCompatActivity {
         tempo.addView(plus,new LinearLayout.LayoutParams(dp(46),dp(46)));
         minus.setOnClickListener(v->changeTempo(core.getTempoBpm()-1));plus.setOnClickListener(v->changeTempo(core.getTempoBpm()+1));
         bpmText.setOnClickListener(v->inputTempo());content.addView(tempo,new LinearLayout.LayoutParams(-1,-2));
+        LinearLayout choices=new LinearLayout(this);choices.setGravity(Gravity.CENTER_VERTICAL);
+        Button difficulty=roundButton("难度："+difficultyName(),"选择音型范围");difficulty.setTextSize(14);
+        Button theme=roundButton("主题："+themeName(),"选择练习主题");theme.setTextSize(14);
+        choices.addView(difficulty,new LinearLayout.LayoutParams(0,dp(44),1));
+        LinearLayout.LayoutParams themeLp=new LinearLayout.LayoutParams(0,dp(44),1);themeLp.leftMargin=dp(8);choices.addView(theme,themeLp);
+        difficulty.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("难度").setSingleChoiceItems(
+            new String[]{"基础 · 常规节奏","进阶 · 加入附点","综合 · 加入三连音"},practiceOptions.difficulty.ordinal(),(dialog,which)->{
+                dialog.dismiss();practiceOptions=new RhythmGenerator.Options(RhythmGenerator.Difficulty.values()[which],practiceOptions.theme);
+                loadRhythmExercise(RhythmGenerator.generate(practiceOptions));
+            }).setNegativeButton("取消",null).show());
+        theme.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("主题").setSingleChoiceItems(
+            new String[]{"综合","附点专项","三连音专项"},practiceOptions.theme.ordinal(),(dialog,which)->{
+                dialog.dismiss();practiceOptions=new RhythmGenerator.Options(practiceOptions.difficulty,RhythmGenerator.Theme.values()[which]);
+                loadRhythmExercise(RhythmGenerator.generate(practiceOptions));
+            }).setNegativeButton("取消",null).show());
+        LinearLayout.LayoutParams choicesLp=new LinearLayout.LayoutParams(-1,-2);choicesLp.topMargin=dp(5);content.addView(choices,choicesLp);
         play=roundButton("▶","开始跟拍");play.setId(R.id.play_pause);play.setTextColor(ToolUi.MINT);play.setTextSize(28);
         play.setBackground(ToolUi.shape(ToolUi.PANEL,dp(48),ToolUi.MINT));
         FrameLayout.LayoutParams playLp=new FrameLayout.LayoutParams(dp(76),dp(76),Gravity.BOTTOM|Gravity.END);
@@ -144,10 +161,10 @@ public class MainActivity extends AppCompatActivity {
         Button back=roundButton("返回节拍器","退出节奏练习");back.setTextSize(16);
         actions.addView(regenerate,new LinearLayout.LayoutParams(0,dp(48),1));
         LinearLayout.LayoutParams backLp=new LinearLayout.LayoutParams(0,dp(48),1);backLp.leftMargin=dp(8);actions.addView(back,backLp);
-        regenerate.setOnClickListener(v->loadRhythmExercise(RhythmScore.randomPractice()));
+        regenerate.setOnClickListener(v->loadRhythmExercise(RhythmGenerator.generate(practiceOptions)));
         back.setOnClickListener(v->loadRhythmExercise(null));
         LinearLayout.LayoutParams actionsLp=new LinearLayout.LayoutParams(-1,-2);actionsLp.topMargin=dp(15);content.addView(actions,actionsLp);
-        TextView guidance=ToolUi.text(this,"跟着高亮弹奏；休止停下。空心是二分，点是附点，3 是三连音。",13,ToolUi.MUTED);
+        TextView guidance=ToolUi.text(this,"跟随高亮弹奏，休止时停下",13,ToolUi.MUTED);
         LinearLayout.LayoutParams guideLp=new LinearLayout.LayoutParams(-1,-2);guideLp.topMargin=dp(14);content.addView(guidance,guideLp);
         scoreView=new RhythmScoreView(this,score);scoreView.setId(R.id.rhythm_score);
         LinearLayout.LayoutParams scoreLp=new LinearLayout.LayoutParams(-1,-2);scoreLp.topMargin=dp(12);content.addView(scoreView,scoreLp);
@@ -158,10 +175,12 @@ public class MainActivity extends AppCompatActivity {
         scoreView.setCurrentNote(index);
         int bar=score.note(index).bar;
         if(bar!=lastPracticeBar){
-            pageScroll.smoothScrollTo(0,Math.max(0,scoreView.getTop()+scoreView.rowTopForBar(bar)-dp(145)));
+            pageScroll.smoothScrollTo(0,Math.max(0,scoreView.getTop()+scoreView.rowTopForBar(bar)-dp(175)));
         }
         lastPracticeBar=bar;
     }
+    private String difficultyName(){return new String[]{"基础","进阶","综合"}[practiceOptions.difficulty.ordinal()];}
+    private String themeName(){return new String[]{"综合","附点","三连音"}[practiceOptions.theme.ordinal()];}
     private void renderMeter(){
         if(core==null||meterText==null)return;
         BeatConfig current=core.getConfig(),pending=core.getRequestedConfig();

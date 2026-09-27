@@ -3,7 +3,6 @@ package org.kalinisa.diatronome.Tools;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 
 /** A 4/4 rhythm score. Twelve units per quarter accommodate eighths and triplets exactly. */
 public final class RhythmScore {
@@ -51,32 +50,24 @@ public final class RhythmScore {
                 position += kind.units;
             }
             if (position != UNITS_PER_BAR) throw new IllegalArgumentException("Incomplete bar " + bar);
+            // Triplet eighths are a complete, beat-aligned group of three.
+            int unit = 0;
+            for (int i = 0; i < kinds.size(); i++) {
+                Kind kind = kinds.get(i);
+                if (kind == Kind.TRIPLET_EIGHTH) {
+                    if (unit % UNITS_PER_BEAT != 0 || i + 2 >= kinds.size()
+                            || kinds.get(i + 1) != kind || kinds.get(i + 2) != kind)
+                        throw new IllegalArgumentException("Incomplete triplet in bar " + bar);
+                    unit += UNITS_PER_BEAT;
+                    i += 2;
+                } else unit += kind.units;
+            }
         }
         return new RhythmScore(notes, bars.size());
     }
 
-    /** Twelve bars made from musical two-beat cells, with all initial note types represented. */
+    /** Twelve bars with a recurring motif. */
     public static RhythmScore randomPractice() {
-        Kind Q = Kind.QUARTER, E = Kind.EIGHTH, T = Kind.TRIPLET_EIGHTH;
-        Kind[][] cells = {
-            {Q, Q}, {E, E, Q}, {Q, E, E}, {E, E, E, E},
-            {Kind.HALF}, {Kind.DOTTED_QUARTER, E},
-            {Kind.QUARTER_REST, Q}, {Kind.EIGHTH_REST, E, Q},
-            {T, T, T, Q}, {Q, T, T, T}, {T, T, T, T, T, T}
-        };
-        Random random = new Random();
-        List<Kind[]> chosen = new ArrayList<>();
-        // Mandatory examples make a generated page useful even if random choices repeat.
-        for (int i = 3; i <= 9; i++) chosen.add(cells[i]);
-        while (chosen.size() < 24) chosen.add(cells[random.nextInt(cells.length)]);
-        Collections.shuffle(chosen, random);
-        List<List<Kind>> bars = new ArrayList<>();
-        for (int bar = 0; bar < 12; bar++) {
-            List<Kind> kinds = new ArrayList<>();
-            Collections.addAll(kinds, chosen.get(bar * 2));
-            Collections.addAll(kinds, chosen.get(bar * 2 + 1));
-            bars.add(kinds);
-        }
-        return of(bars);
+        return RhythmGenerator.generate(RhythmGenerator.Options.DEFAULT);
     }
 }

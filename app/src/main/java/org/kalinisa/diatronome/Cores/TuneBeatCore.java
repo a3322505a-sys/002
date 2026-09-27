@@ -50,7 +50,8 @@ public final class TuneBeatCore extends BaseCore {
     public synchronized void setTempoBpm(int value){bpm=Math.max(30,Math.min(240,value));if(current!=null)current.sequence.request(current.rhythm==null?requested:BeatConfig.DEFAULT,bpm);changed();}
     public synchronized void requestConfig(BeatConfig config){
         requested=config;
-        if(current==null){audible=config;save();}else current.sequence.request(config,bpm);
+        if(current==null){audible=config;save();}
+        else if(current.rhythm==null)current.sequence.request(config,bpm);
         changed();
     }
     public synchronized void play(){
@@ -79,12 +80,17 @@ public final class TuneBeatCore extends BaseCore {
                 while(offset<pcm.length&&!s.cancelled){int n=track.write(pcm,offset,pcm.length-offset);if(n<=0)throw new IllegalStateException("Audio write failed");offset+=n;}
                 long head=((long)track.getPlaybackHeadPosition())&0xffffffffL;
                 // Deliver only events the audio device has consumed; generation alone is not a visible beat.
-                BeatSequence.Event latest=null;while(!events.isEmpty()&&events.peekFirst().frame<head)latest=events.removeFirst();
-                if(latest!=null){final BeatSequence.Event e=latest;main.post(()->{
+                BeatSequence.Event latest=null,latestRhythm=null;
+                while(!events.isEmpty()&&events.peekFirst().frame<head){
+                    latest=events.removeFirst();if(latest.rhythmIndex>=0)latestRhythm=latest;
+                }
+                if(latest!=null){final BeatSequence.Event e=latest,position=latestRhythm;main.post(()->{
                     if(current!=s||s.cancelled)return;
                     if(s.rhythm==null&&!audible.equals(e.config)){audible=e.config;save();changed();}
-                    currentTick=e.tick;if(e.rhythmIndex>=0)currentRhythmIndex=e.rhythmIndex;
-                    sendMessage(HANDLER_MSG_TICK,e);});}
+                    currentTick=e.tick;sendMessage(HANDLER_MSG_TICK,e);
+                    if(position!=null){currentRhythmIndex=position.rhythmIndex;
+                        if(position!=e)sendMessage(HANDLER_MSG_TICK,position);}
+                });}
             }
         }catch(RuntimeException failure){if(!s.cancelled)main.post(()->{if(current==s){stop();sendMessage(HANDLER_MSG_ERROR,0,0);}});}
         finally{synchronized(s){if(track!=null){try{track.pause();track.flush();}catch(IllegalStateException ignored){}track.release();}s.track=null;}}
