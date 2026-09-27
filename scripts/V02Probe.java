@@ -28,6 +28,31 @@ public class V02Probe {
   BeatSequence seq=new BeatSequence(BeatConfig.of(4,4,4),240);BeatRenderer renderer=new BeatRenderer(seq);
   ArrayDeque<BeatSequence.Event> events=new ArrayDeque<>();short[] pcm=new short[44100];renderer.render(pcm,events);
   check(events.size()==16,"PCM event count");for(BeatSequence.Event e:events){boolean sound=false;for(int i=(int)e.frame+1;i<e.frame+100;i++)sound|=pcm[i]!=0;check(sound,"missing PCM click");}
+  for(int run=0;run<20;run++){
+   RhythmScore score=RhythmScore.randomPractice();EnumSet<RhythmScore.Kind> kinds=EnumSet.noneOf(RhythmScore.Kind.class);
+   check(score.bars()==12,"practice length");
+   int[] barUnits=new int[12];for(int i=0;i<score.size();i++){RhythmScore.Note note=score.note(i);kinds.add(note.kind);barUnits[note.bar]+=note.kind.units;}
+   for(int total:barUnits)check(total==RhythmScore.UNITS_PER_BAR,"invalid bar duration");
+   check(kinds.size()==RhythmScore.Kind.values().length,"missing initial rhythm kind");
+  }
+  RhythmScore score=RhythmScore.randomPractice();
+  BeatRenderer practice=new BeatRenderer(new BeatSequence(BeatConfig.DEFAULT,120),score);
+  ArrayDeque<BeatSequence.Event> cursor=new ArrayDeque<>();
+  int cycle=score.bars()*4*BeatSequence.RATE/2;
+  short[] audio=new short[cycle+1024];practice.render(audio,cursor);
+  int nextNote=0;boolean wrapped=false;int accentPeak=0,ordinaryPeak=0;
+  for(int i=0;i<1000;i++)accentPeak=Math.max(accentPeak,Math.abs((int)audio[i]));
+  for(int i=BeatSequence.RATE/2;i<BeatSequence.RATE/2+1000;i++)ordinaryPeak=Math.max(ordinaryPeak,Math.abs((int)audio[i]));
+  check(accentPeak>20000&&accentPeak>ordinaryPeak*1.15,"click gain and accent contrast");
+  for(BeatSequence.Event event:cursor){
+   if(event.rhythmIndex<0)continue;
+   if(event.frame>=cycle){check(event.rhythmIndex==0&&event.frame==cycle,"loop onset");wrapped=true;break;}
+   check(event.rhythmIndex==nextNote,"cursor order");
+   RhythmScore.Note note=score.note(nextNote++);
+   long expected=Math.round((note.bar*4+note.startUnit/12.0)*BeatSequence.RATE/2.0);
+   check(event.frame==expected,"cursor sample onset");
+  }
+  check(nextNote==score.size()&&wrapped,"complete rhythm loop");
   System.out.println("PASS "+checks+" assertions: 13 configs, all 169 boundary transitions, sample PCM.");
  }
 }

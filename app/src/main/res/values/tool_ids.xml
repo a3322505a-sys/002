@@ -2,4 +2,5 @@
     <item name="tempo_minus" type="id"/><item name="tempo_plus" type="id"/>
     <item name="tempo_value" type="id"/><item name="tempo_dial" type="id"/>
     <item name="play_pause" type="id"/><item name="beat_dots" type="id"/>
+    <item name="rhythm_score" type="id"/>
 </resources>
