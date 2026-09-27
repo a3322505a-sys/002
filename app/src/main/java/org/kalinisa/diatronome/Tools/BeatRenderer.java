@@ -5,6 +5,7 @@ import java.util.ArrayDeque;
 public final class BeatRenderer {
     private final BeatSequence sequence;
     private BeatSequence.Event sounding;
+    private BeatSequence.Event beatEvent;
     private long nextFrame;
     private long frame;
     private final RhythmScore rhythm;
@@ -30,17 +31,21 @@ public final class BeatRenderer {
     public void render(short[] pcm,ArrayDeque<BeatSequence.Event> events){
         for(int i=0;i<pcm.length;i++,frame++){
             if(frame>=nextFrame){
-                sounding=sequence.next();events.addLast(sounding);nextFrame=sequence.nextFrame();
+                beatEvent=sequence.next();nextFrame=sequence.nextFrame();
+                if(rhythm==null){sounding=beatEvent;events.addLast(beatEvent);}
                 if(rhythm!=null){
                     int beat=beatCount++%(rhythm.bars()*4);
                     rhythmBar=beat/4;rhythmBeat=beat%4;
                     if(beat==0)nextNoteIndex=0;
-                    beatStart=sounding.frame;beatFrames=BeatSequence.RATE*60.0/sounding.bpm;
+                    beatStart=beatEvent.frame;beatFrames=BeatSequence.RATE*60.0/beatEvent.bpm;
                     scheduleNote();
                 }
             }
             while(frame>=nextNoteFrame){
-                events.addLast(new BeatSequence.Event(nextNoteFrame,sounding.tick,sounding.bpm,sounding.config,nextNoteIndex));
+                BeatSequence.Event noteEvent=new BeatSequence.Event(nextNoteFrame,beatEvent.tick,beatEvent.bpm,beatEvent.config,nextNoteIndex);
+                events.addLast(noteEvent);
+                // The same score event drives both the PCM onset and the audible cursor.
+                sounding=rhythm.note(nextNoteIndex).kind.rest?null:noteEvent;
                 nextNoteIndex++;scheduleNote();
             }
             long age=sounding==null?Long.MAX_VALUE:frame-sounding.frame;
