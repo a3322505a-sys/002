@@ -70,6 +70,27 @@ public class V02Probe {
    check(event.frame==expected,"cursor sample onset");
   }
   check(nextNote==score.size()&&wrapped,"complete rhythm loop");
+  // Verify PCM, not just cursor events: offbeat notes sound, rests and held beats do not.
+  RhythmScore fixture=RhythmScore.of(Arrays.asList(
+   Arrays.asList(RhythmScore.Kind.EIGHTH_REST,RhythmScore.Kind.EIGHTH,RhythmScore.Kind.QUARTER,RhythmScore.Kind.EIGHTH,RhythmScore.Kind.EIGHTH,RhythmScore.Kind.QUARTER),
+   Arrays.asList(RhythmScore.Kind.HALF,RhythmScore.Kind.QUARTER_REST,RhythmScore.Kind.QUARTER),
+   Arrays.asList(RhythmScore.Kind.DOTTED_QUARTER,RhythmScore.Kind.EIGHTH,RhythmScore.Kind.TRIPLET_EIGHTH,RhythmScore.Kind.TRIPLET_EIGHTH,RhythmScore.Kind.TRIPLET_EIGHTH,RhythmScore.Kind.QUARTER)));
+  for(int tempo:new int[]{30,120,137,240}){
+   BeatRenderer r=new BeatRenderer(new BeatSequence(BeatConfig.DEFAULT,tempo),fixture);
+   int length=(int)Math.ceil(2*fixture.bars()*4*BeatSequence.RATE*60.0/tempo);
+   short[] samples=new short[length];ArrayDeque<BeatSequence.Event> positions=new ArrayDeque<>();
+   // Streaming boundaries must not change note timing.
+   for(int offset=0;offset<length;){short[] chunk=new short[Math.min(256,length-offset)];r.render(chunk,positions);System.arraycopy(chunk,0,samples,offset,chunk.length);offset+=chunk.length;}
+   boolean[] allowed=new boolean[length];int index=0;
+   for(BeatSequence.Event e:positions){
+    check(e.rhythmIndex==index++%fixture.size(),"practice event order without metronome ticks");
+    RhythmScore.Note n=fixture.note(e.rhythmIndex);int onset=(int)e.frame;
+    if(n.kind.rest){for(int j=onset;j<Math.min(length,onset+1000);j++)check(samples[j]==0,"rest must be silent");}
+    else{boolean audible=false;for(int j=onset;j<Math.min(length,onset+1058);j++){allowed[j]=true;audible|=samples[j]!=0;}check(audible,"score note must sound");}
+   }
+   check(index==fixture.size()*2,"two complete audible score loops");
+   for(int j=0;j<length;j++)if(!allowed[j])check(samples[j]==0,"unexpected fixed metronome click or held-note retrigger");
+  }
   System.out.println("PASS "+checks+" assertions: 13 configs, all 169 boundary transitions, sample PCM.");
  }
  static int indexOfBar(RhythmScore score,int bar){for(int i=0;i<score.size();i++)if(score.note(i).bar==bar)return i;throw new AssertionError();}
